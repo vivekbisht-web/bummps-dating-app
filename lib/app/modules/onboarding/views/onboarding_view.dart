@@ -18,14 +18,14 @@ class OnboardingView extends GetView<OnboardingController> {
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // Hero image carousel filling the upper portion of the screen.
+          // Full-screen swipeable slides (image + scrim + title/subtitle).
           Positioned.fill(
             child: PageView.builder(
               controller: pageController,
               onPageChanged: controller.onPageChanged,
               itemCount: controller.slides.length,
               itemBuilder: (context, index) {
-                return _HeroImage(image: controller.slides[index].image);
+                return _Slide(slide: controller.slides[index]);
               },
             ),
           ),
@@ -44,10 +44,10 @@ class OnboardingView extends GetView<OnboardingController> {
             ),
           ),
 
-          // Bottom content sheet with title, subtitle, dots and CTAs.
+          // Fixed, compact control strip: dots + CTA + login.
           Align(
             alignment: Alignment.bottomCenter,
-            child: _BottomSheetContent(pageController: pageController),
+            child: _BottomControls(pageController: pageController),
           ),
         ],
       ),
@@ -55,10 +55,10 @@ class OnboardingView extends GetView<OnboardingController> {
   }
 }
 
-class _HeroImage extends StatelessWidget {
-  const _HeroImage({required this.image});
+class _Slide extends StatelessWidget {
+  const _Slide({required this.slide});
 
-  final String image;
+  final OnboardingSlide slide;
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +66,7 @@ class _HeroImage extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         Image.asset(
-          image,
+          slide.image,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stack) => Container(
             decoration: const BoxDecoration(
@@ -77,14 +77,55 @@ class _HeroImage extends StatelessWidget {
               ),
             ),
             child: const Center(
-              child: Icon(Icons.favorite,
-                  color: AppColors.goldDark, size: 64),
+              child: Icon(Icons.favorite, color: AppColors.goldDark, size: 64),
             ),
           ),
         ),
-        // Scrim so text stays legible against the photo.
+        // Gradient scrim: photo dissolves smoothly into solid black at bottom.
         const DecoratedBox(
-          decoration: BoxDecoration(gradient: AppColors.heroScrim),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.transparent,
+                Colors.transparent,
+                AppColors.background,
+              ],
+              stops: [0.0, 0.35, 0.78],
+            ),
+          ),
+        ),
+        // Title + subtitle sit above the fixed control strip.
+        Positioned(
+          left: 28,
+          right: 28,
+          bottom: 210,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(text: slide.titleLead),
+                    TextSpan(
+                      text: slide.titleHighlight,
+                      style: const TextStyle(color: AppColors.gold),
+                    ),
+                    TextSpan(text: slide.titleTrail),
+                  ],
+                ),
+                textAlign: TextAlign.center,
+                style: AppTextStyles.displayLarge,
+              ),
+              const SizedBox(height: 14),
+              Text(
+                slide.subtitle,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.bodyMedium,
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -142,8 +183,8 @@ class _SkipButton extends StatelessWidget {
   }
 }
 
-class _BottomSheetContent extends StatelessWidget {
-  const _BottomSheetContent({required this.pageController});
+class _BottomControls extends StatelessWidget {
+  const _BottomControls({required this.pageController});
 
   final PageController pageController;
 
@@ -153,45 +194,13 @@ class _BottomSheetContent extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(28, 36, 28, 28),
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-      ),
+      padding: const EdgeInsets.fromLTRB(28, 24, 28, 20),
+      decoration: const BoxDecoration(color: AppColors.background),
       child: SafeArea(
         top: false,
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Obx(() {
-              final slide = controller.slides[controller.currentPage.value];
-              return Column(
-                children: [
-                  Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(text: slide.titleLead),
-                        TextSpan(
-                          text: slide.titleHighlight,
-                          style: TextStyle(color: AppColors.gold),
-                        ),
-                        TextSpan(text: slide.titleTrail),
-                      ],
-                    ),
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.displayLarge,
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    slide.subtitle,
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.bodyMedium,
-                  ),
-                ],
-              );
-            }),
-            const SizedBox(height: 24),
             SmoothPageIndicator(
               controller: pageController,
               count: controller.slides.length,
@@ -204,18 +213,17 @@ class _BottomSheetContent extends StatelessWidget {
                 dotColor: AppColors.inactiveDot,
               ),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
             PrimaryButton(
               label: 'Get Started',
               trailingIcon: Icons.arrow_forward,
               onPressed: controller.getStarted,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Already have an account? ',
-                    style: AppTextStyles.caption),
+                Text('Already have an account? ', style: AppTextStyles.caption),
                 GestureDetector(
                   onTap: controller.goToLogin,
                   child: Text(
