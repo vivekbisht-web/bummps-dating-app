@@ -1,5 +1,7 @@
 import 'package:get/get.dart';
 
+import '../../../routes/app_pages.dart';
+
 /// A single onboarding slide's content.
 class OnboardingSlide {
   const OnboardingSlide({
@@ -52,18 +54,9 @@ class OnboardingController extends GetxController {
 
   void onPageChanged(int index) => currentPage.value = index;
 
-  void getStarted() {
-    // TODO: wire to sign-up flow once auth module exists.
-    Get.snackbar('Bummps', 'Get Started tapped');
-  }
+  void getStarted() => Get.toNamed(Routes.register);
 
-  void skip() {
-    // TODO: wire to login/home once those modules exist.
-    Get.snackbar('Bummps', 'Skipped onboarding');
-  }
+  void skip() => Get.toNamed(Routes.login);
 
-  void goToLogin() {
-    // TODO: navigate to Routes.login when the auth module is added.
-    Get.snackbar('Bummps', 'Log in tapped');
-  }
+  void goToLogin() => Get.toNamed(Routes.login);
 }
