@@ -34,12 +34,30 @@ class OnboardingView extends GetView<OnboardingController> {
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _Logo(),
-                  _SkipButton(onTap: controller.skip),
-                ],
+              child: SizedBox(
+                height: 40,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Image.asset(
+                        'assets/images/bummps-icon.png',
+                        height: 32,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    Image.asset(
+                      'assets/images/bummps..png',
+                      height: 20,
+                      fit: BoxFit.contain,
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: _SkipButton(onTap: controller.skip),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -132,25 +150,6 @@ class _Slide extends StatelessWidget {
   }
 }
 
-class _Logo extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.textPrimary,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        'bummps.',
-        style: AppTextStyles.titleMedium.copyWith(
-          color: AppColors.background,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-}
 
 class _SkipButton extends StatelessWidget {
   const _SkipButton({required this.onTap});

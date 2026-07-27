@@ -5,6 +5,8 @@ import '../modules/auth/views/login_view.dart';
 import '../modules/auth/views/register_view.dart';
 import '../modules/onboarding/bindings/onboarding_binding.dart';
 import '../modules/onboarding/views/onboarding_view.dart';
+import '../modules/profile_setup/bindings/profile_setup_binding.dart';
+import '../modules/profile_setup/views/profile_setup_view.dart';
 
 part 'app_routes.dart';
 
@@ -31,6 +33,12 @@ class AppPages {
       name: _Paths.register,
       page: () => const RegisterView(),
       binding: RegisterBinding(),
+      transition: Transition.rightToLeftWithFade,
+    ),
+    GetPage(
+      name: _Paths.profileSetup,
+      page: () => const ProfileScreen(),
+      binding: ProfileSetupBinding(),
       transition: Transition.rightToLeftWithFade,
     ),
   ];

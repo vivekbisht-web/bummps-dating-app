@@ -26,7 +26,7 @@ class RegisterController extends GetxController {
     // TODO: replace with real auth service call.
     await Future.delayed(const Duration(milliseconds: 900));
     isLoading.value = false;
-    Get.snackbar('Bummps', 'Account created for ${nameController.text.trim()}');
+    Get.toNamed(Routes.profileSetup);
   }
 
   void continueWithGoogle() => Get.snackbar('Bummps', 'Google sign-up tapped');

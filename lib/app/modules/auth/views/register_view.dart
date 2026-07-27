@@ -17,13 +17,26 @@ class RegisterView extends GetView<RegisterController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: Get.back,
+        leadingWidth: 90,
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(width: 4),
+            IconButton(
+              icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+              onPressed: Get.back,
+            ),
+            Image.asset(
+              'assets/images/bummps-icon.png',
+              height: 24,
+              fit: BoxFit.contain,
+            ),
+          ],
         ),
-        title: Text(
-          'bummps.',
-          style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.w800),
+        title: Image.asset(
+          'assets/images/bummps..png',
+          height: 18,
+          fit: BoxFit.contain,
         ),
         centerTitle: true,
       ),
