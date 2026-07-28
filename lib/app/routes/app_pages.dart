@@ -35,6 +35,7 @@ class AppPages {
       binding: RegisterBinding(),
       transition: Transition.rightToLeftWithFade,
     ),
+
     GetPage(
       name: _Paths.profileSetup,
       page: () => const ProfileScreen(),

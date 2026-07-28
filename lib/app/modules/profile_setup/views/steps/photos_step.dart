@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -50,7 +51,28 @@ class PhotosStep extends StatelessWidget {
               return _PhotoTile(onTap: () => controller.addPhoto(index + 1));
             },
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 20),
+          GestureDetector(
+            onTap: () {
+              Get.snackbar('Bummps', 'Quality guidelines coming soon');
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.verified_user_outlined, color: AppColors.gold, size: 14),
+                const SizedBox(width: 6),
+                Text(
+                  'Quality Guidelines',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.gold,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
           PrimaryButton(
             label: 'Continue',
             trailingIcon: Icons.arrow_forward,

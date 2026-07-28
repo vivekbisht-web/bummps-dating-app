@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../routes/app_pages.dart';
+
 /// Drives the multi-step profile setup wizard: tracks the active step,
 /// holds all form data, and handles inter-step navigation.
 class ProfileSetupController extends GetxController {
@@ -9,7 +13,7 @@ class ProfileSetupController extends GetxController {
 
   /// Steps designed in Figma. The progress label still references "of 5".
   static const int totalSteps = 5;
-  static const int implementedSteps = 3;
+  static const int implementedSteps = 5;
   static const int maxInterests = 5;
   static const int maxBioLength = 300;
 
@@ -38,13 +42,32 @@ class ProfileSetupController extends GetxController {
   ];
 
   // --- Step 3: gallery ---
-  final RxList<String?> photos = List<String?>.filled(5, null).obs;
+  final RxList<String?> photos = List<String?>.filled(6, null).obs;
+
+  // --- Step 4: verification ---
+  final RxBool isVerifying = false.obs;
 
   double get progress => (currentStep.value + 1) / totalSteps;
   int get percent => (progress * 100).round();
 
   bool get isLastImplementedStep =>
       currentStep.value == implementedSteps - 1;
+
+  int get age {
+    if (dob.value == null) return 29;
+    final now = DateTime.now();
+    int age = now.year - dob.value!.year;
+    if (now.month < dob.value!.month ||
+        (now.month == dob.value!.month && now.day < dob.value!.day)) {
+      age--;
+    }
+    return age;
+  }
+
+  void editProfile() {
+    currentStep.value = 0;
+    _animateTo(0);
+  }
 
   void onBioChanged(String value) => bioLength.value = value.length;
 
@@ -91,13 +114,51 @@ class ProfileSetupController extends GetxController {
     Get.snackbar('Bummps', 'Photo picker coming soon');
   }
 
+  Future<void> startVerification() async {
+    isVerifying.value = true;
+    Get.snackbar('Bummps', 'Launching selfie verification camera...');
+    await Future.delayed(const Duration(seconds: 4));
+    isVerifying.value = false;
+    Get.snackbar('Bummps', 'Verification successful! Welcome.');
+    await Future.delayed(const Duration(milliseconds: 500));
+    next();
+  }
+
+  void doThisLaterVerification() {
+    next();
+  }
+
   void next() {
     if (currentStep.value < implementedSteps - 1) {
       currentStep.value++;
       _animateTo(currentStep.value);
     } else {
-      // TODO: navigate to the next steps (4-5) once designed / to home.
-      Get.snackbar('Bummps', 'Profile basics saved. More steps coming soon.');
+      Get.dialog(
+        AlertDialog(
+          backgroundColor: AppColors.card,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'Success',
+            style: AppTextStyles.headlineMedium.copyWith(color: AppColors.gold),
+          ),
+          content: Text(
+            'Your premium Bummps profile is finalized and active. Welcome aboard!',
+            style: AppTextStyles.bodyMedium,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Get.close(1);
+                Get.offAllNamed(Routes.onboarding);
+              },
+              child: Text(
+                'Done',
+                style: AppTextStyles.button.copyWith(color: AppColors.gold),
+              ),
+            )
+          ],
+        )
+      );
     }
   }
 
