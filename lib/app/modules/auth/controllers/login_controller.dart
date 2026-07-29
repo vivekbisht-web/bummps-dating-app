@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../core/services/network/dio_exception.dart';
 import '../../../core/utils/validators.dart';
+import '../../../data/repositories/auth_repository.dart';
 import '../../../routes/app_pages.dart';
 
 /// Handles the "Welcome back" sign-in form.
 class LoginController extends GetxController {
+  final AuthRepository _authRepository;
+
+  LoginController({required AuthRepository authRepository}) : _authRepository = authRepository;
+
   final formKey = GlobalKey<FormState>();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
@@ -21,10 +27,35 @@ class LoginController extends GetxController {
   Future<void> continueWithEmail() async {
     if (!(formKey.currentState?.validate() ?? false)) return;
     isLoading.value = true;
-    // TODO: replace with real auth service call.
-    await Future.delayed(const Duration(milliseconds: 900));
-    isLoading.value = false;
-    Get.snackbar('Bummps', 'Signed in as ${emailController.text.trim()}');
+    try {
+      final response = await _authRepository.login(
+        email: emailController.text.trim(),
+        password: passwordController.text,
+      );
+      
+      Get.snackbar(
+        'Success',
+        'Signed in as ${response.name}',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+
+      // Route to profileSetup or home on successful authentication
+      Get.offAllNamed(Routes.profileSetup);
+    } on ApiException catch (e) {
+      Get.snackbar(
+        'Authentication Failed',
+        e.message,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'An unexpected error occurred. Please try again.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   void forgotPassword() {
