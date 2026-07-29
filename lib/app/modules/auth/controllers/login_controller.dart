@@ -47,7 +47,9 @@ class LoginController extends GetxController {
         e.message,
         snackPosition: SnackPosition.BOTTOM,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('[LoginController] Unexpected error: $e');
+      debugPrint('[LoginController] StackTrace: $stackTrace');
       Get.snackbar(
         'Error',
         'An unexpected error occurred. Please try again.',

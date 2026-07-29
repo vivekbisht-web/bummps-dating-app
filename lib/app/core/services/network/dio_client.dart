@@ -1,12 +1,14 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../constants/app_constants.dart';
+import '../storage/secure_storage_service.dart';
+import 'auth_interceptor.dart';
 import 'dio_exception.dart';
 
 class DioClient {
   late final Dio _dio;
 
-  DioClient() {
+  DioClient(SecureStorageService storageService) {
     _dio = Dio(
       BaseOptions(
         baseUrl: AppConstants.baseUrl,
@@ -20,6 +22,9 @@ class DioClient {
         },
       ),
     );
+
+    // Attach AuthInterceptor
+    _dio.interceptors.add(AuthInterceptor(storageService));
 
     // Logging interceptor for debugging in development mode
     if (kDebugMode) {
@@ -37,9 +42,10 @@ class DioClient {
     }
   }
 
-  // GET Request
-  Future<Response> get(
+  // Generic GET Request
+  Future<T> get<T>(
     String path, {
+    required T Function(dynamic json) fromJson,
     Map<String, dynamic>? queryParameters,
     Options? options,
     CancelToken? cancelToken,
@@ -51,15 +57,16 @@ class DioClient {
         options: options,
         cancelToken: cancelToken,
       );
-      return response;
+      return fromJson(response.data);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
   }
 
-  // POST Request
-  Future<Response> post(
+  // Generic POST Request
+  Future<T> post<T>(
     String path, {
+    required T Function(dynamic json) fromJson,
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Options? options,
@@ -73,15 +80,16 @@ class DioClient {
         options: options,
         cancelToken: cancelToken,
       );
-      return response;
+      return fromJson(response.data);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
   }
 
-  // PUT Request
-  Future<Response> put(
+  // Generic PUT Request
+  Future<T> put<T>(
     String path, {
+    required T Function(dynamic json) fromJson,
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Options? options,
@@ -95,15 +103,16 @@ class DioClient {
         options: options,
         cancelToken: cancelToken,
       );
-      return response;
+      return fromJson(response.data);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
   }
 
-  // DELETE Request
-  Future<Response> delete(
+  // Generic DELETE Request
+  Future<T> delete<T>(
     String path, {
+    required T Function(dynamic json) fromJson,
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Options? options,
@@ -117,7 +126,7 @@ class DioClient {
         options: options,
         cancelToken: cancelToken,
       );
-      return response;
+      return fromJson(response.data);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
