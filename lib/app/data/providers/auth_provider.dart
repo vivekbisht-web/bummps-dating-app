@@ -32,4 +32,22 @@ class AuthProvider {
       ),
     );
   }
+
+  Future<LoginResponse> register({
+    required FormData formData,
+  }) async {
+    return await _dioClient.post<LoginResponse>(
+      AppConstants.register,
+      data: formData,
+      fromJson: (json) {
+        if (json is String) {
+          return LoginResponse.fromJson(jsonDecode(json) as Map<String, dynamic>);
+        }
+        return LoginResponse.fromJson(json as Map<String, dynamic>);
+      },
+      options: Options(
+        extra: {'requiresAuth': false},
+      ),
+    );
+  }
 }

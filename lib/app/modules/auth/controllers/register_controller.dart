@@ -22,11 +22,14 @@ class RegisterController extends GetxController {
 
   Future<void> createAccount() async {
     if (!(formKey.currentState?.validate() ?? false)) return;
-    isLoading.value = true;
-    // TODO: replace with real auth service call.
-    await Future.delayed(const Duration(milliseconds: 900));
-    isLoading.value = false;
-    Get.toNamed(Routes.profileSetup);
+    Get.toNamed(
+      Routes.profileSetup,
+      arguments: {
+        'name': nameController.text.trim(),
+        'email': emailController.text.trim(),
+        'password': passwordController.text,
+      },
+    );
   }
 
   void continueWithGoogle() => Get.snackbar('Bummps', 'Google sign-up tapped');

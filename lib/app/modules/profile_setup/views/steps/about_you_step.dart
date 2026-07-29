@@ -57,6 +57,22 @@ class AboutYouStep extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
+          _sectionLabel('Interested In'),
+          const SizedBox(height: 10),
+          Obx(
+            () => Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: controller.interestedInOptions
+                  .map((g) => SelectableChip(
+                        label: g,
+                        selected: controller.interestedIn.value == g,
+                        onTap: () => controller.selectInterestedIn(g),
+                      ))
+                  .toList(),
+            ),
+          ),
+          const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -100,6 +116,29 @@ class AboutYouStep extends StatelessWidget {
                   hint: 'Degree',
                   controller: controller.educationController,
                   icon: Icons.school_outlined,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _FilledField(
+                  label: 'Job Title',
+                  hint: 'Software Engineer',
+                  controller: controller.jobTitleController,
+                  icon: Icons.work_outline,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _FilledField(
+                  label: 'Company',
+                  hint: 'Tech Corp',
+                  controller: controller.companyController,
+                  icon: Icons.business,
                 ),
               ),
             ],
