@@ -17,6 +17,12 @@ class ProfileCardData {
   final String matchScore;
   final String imageUrl;
   final bool isVerified;
+  final String location;
+  final String height;
+  final String education;
+  final String languages;
+  final List<String> interests;
+  final List<String> lifestyle;
 
   ProfileCardData({
     required this.name,
@@ -28,6 +34,12 @@ class ProfileCardData {
     required this.matchScore,
     required this.imageUrl,
     this.isVerified = true,
+    required this.location,
+    required this.height,
+    required this.education,
+    required this.languages,
+    required this.interests,
+    required this.lifestyle,
   });
 }
 
@@ -39,6 +51,8 @@ class ChatThread {
   final RxString lastMessage;
   final RxString time;
   final RxList<Map<String, dynamic>> messages;
+  final RxBool isUnread;
+  final RxBool isOnline;
 
   ChatThread({
     required this.id,
@@ -46,8 +60,12 @@ class ChatThread {
     required this.imageUrl,
     required String initialMessage,
     required String initialTime,
+    bool unread = false,
+    bool online = false,
   })  : lastMessage = initialMessage.obs,
         time = initialTime.obs,
+        isUnread = unread.obs,
+        isOnline = online.obs,
         messages = <Map<String, dynamic>>[
           {'text': initialMessage, 'sender': 'them', 'time': initialTime}
         ].obs;
@@ -88,6 +106,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     super.onInit();
     _loadInitialProfiles();
     _loadLikesYouList();
+    _loadInitialMatches();
     _loadInitialChats();
   }
 
@@ -102,16 +121,28 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
         id: 'SS_0835',
         matchScore: '98',
         imageUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&auto=format&fit=crop&q=80',
+        location: 'New York, USA',
+        height: '170 cm',
+        education: 'Wharton School',
+        languages: 'EN, FR, ES',
+        interests: ['Photography', 'Travel', 'Architecture', 'Yachting', 'Oenology'],
+        lifestyle: ['Non-smoker', 'Social Drinker', 'Dog Lover'],
       ),
       ProfileCardData(
         name: 'Elena',
-        age: 27,
-        job: 'Classical Violinist',
+        age: 28,
+        job: 'Art Curator',
         distance: '5 miles away',
-        bio: 'Creating harmony in music and in life. Love reading French literature, exploring minimal modern architecture, and brewing black espresso at dawn.',
+        bio: 'Seeking a connection that feels as timeless as a well-composed photograph. I find beauty in the brutalist architecture of the city and the silence of a midnight gallery. Let\'s discuss philosophy over a glass of vintage Bordeaux.',
         id: 'SS_0192',
         matchScore: '95',
         imageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&auto=format&fit=crop&q=80',
+        location: 'Paris, France',
+        height: '175 cm',
+        education: 'Sorbonne',
+        languages: 'FR, EN, IT',
+        interests: ['Photography', 'Travel', 'Architecture', 'Oenology', 'Classical'],
+        lifestyle: ['Social Smoker', 'Occasional Drinks', 'Cat Lover'],
       ),
       ProfileCardData(
         name: 'Sophia',
@@ -122,6 +153,12 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
         id: 'SS_0442',
         matchScore: '92',
         imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80',
+        location: 'Milan, Italy',
+        height: '168 cm',
+        education: 'Politecnico di Milano',
+        languages: 'IT, EN, DE',
+        interests: ['Architecture', 'Travel', 'Classical Music', 'Yachting', 'Oenology'],
+        lifestyle: ['Non-smoker', 'Occasional Drinks', 'Cat Lover'],
       ),
       ProfileCardData(
         name: 'Marcus',
@@ -132,6 +169,12 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
         id: 'SS_0571',
         matchScore: '89',
         imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop&q=80',
+        location: 'London, UK',
+        height: '182 cm',
+        education: 'Courtauld Institute',
+        languages: 'EN, FR',
+        interests: ['Photography', 'Architecture', 'Yachting', 'Oenology', 'Travel'],
+        lifestyle: ['Non-smoker', 'Social Drinker', 'Dog Lover'],
       ),
       ProfileCardData(
         name: 'Julius',
@@ -142,6 +185,12 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
         id: 'SS_0904',
         matchScore: '87',
         imageUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&auto=format&fit=crop&q=80',
+        location: 'Tuscany, Italy',
+        height: '185 cm',
+        education: 'University of Florence',
+        languages: 'IT, EN',
+        interests: ['Oenology', 'Classical Music', 'Travel', 'Photography', 'Architecture'],
+        lifestyle: ['Non-smoker', 'Social Drinker', 'Dog Lover'],
       ),
     ]);
   }
@@ -157,6 +206,12 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
         id: 'SS_0920',
         matchScore: '97',
         imageUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&auto=format&fit=crop&q=80',
+        location: 'Paris, France',
+        height: '165 cm',
+        education: 'IFM Paris',
+        languages: 'FR, EN',
+        interests: ['Photography', 'Travel'],
+        lifestyle: ['Non-smoker'],
       ),
       ProfileCardData(
         name: 'Aria',
@@ -167,6 +222,97 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
         id: 'SS_0733',
         matchScore: '94',
         imageUrl: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=400&auto=format&fit=crop&q=80',
+        location: 'Boston, USA',
+        height: '170 cm',
+        education: 'Harvard Medical',
+        languages: 'EN, ES',
+        interests: ['Classical Music', 'Travel'],
+        lifestyle: ['Non-smoker'],
+      ),
+    ]);
+  }
+
+  void _loadInitialMatches() {
+    matches.addAll([
+      ProfileCardData(
+        name: 'Elena',
+        age: 28,
+        job: 'Art Curator',
+        distance: '5 miles away',
+        bio: 'Seeking a connection...',
+        id: 'SS_0192',
+        matchScore: '95',
+        imageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80',
+        location: 'Paris, France',
+        height: '175 cm',
+        education: 'Sorbonne',
+        languages: 'FR, EN, IT',
+        interests: ['Photography', 'Travel'],
+        lifestyle: ['Cat Lover'],
+      ),
+      ProfileCardData(
+        name: 'Marcus',
+        age: 32,
+        job: 'Fine Art Curator',
+        distance: '3 miles away',
+        bio: 'Passionate about aesthetic storytelling...',
+        id: 'SS_0571',
+        matchScore: '89',
+        imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+        location: 'London, UK',
+        height: '182 cm',
+        education: 'Courtauld Institute',
+        languages: 'EN, FR',
+        interests: ['Photography', 'Architecture'],
+        lifestyle: ['Dog Lover'],
+      ),
+      ProfileCardData(
+        name: 'Sophia',
+        age: 29,
+        job: 'Boutique Architect',
+        distance: '4 miles away',
+        bio: 'Designing space...',
+        id: 'SS_0442',
+        matchScore: '92',
+        imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+        location: 'Milan, Italy',
+        height: '168 cm',
+        education: 'Politecnico',
+        languages: 'IT, EN',
+        interests: ['Architecture', 'Travel'],
+        lifestyle: ['Cat Lover'],
+      ),
+      ProfileCardData(
+        name: 'Julian',
+        age: 31,
+        job: 'Venture Capitalist',
+        distance: '2 miles away',
+        bio: 'Seeking intellectual depth...',
+        id: 'SS_0835',
+        matchScore: '98',
+        imageUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80',
+        location: 'New York, USA',
+        height: '170 cm',
+        education: 'Wharton School',
+        languages: 'EN, FR',
+        interests: ['Photography', 'Travel'],
+        lifestyle: ['Non-smoker'],
+      ),
+      ProfileCardData(
+        name: 'Kai',
+        age: 27,
+        job: 'Creative Director',
+        distance: '1 mile away',
+        bio: 'Exploring expressions...',
+        id: 'SS_0990',
+        matchScore: '93',
+        imageUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&auto=format&fit=crop&q=80',
+        location: 'Berlin, Germany',
+        height: '178 cm',
+        education: 'UdK Berlin',
+        languages: 'DE, EN',
+        interests: ['Photography', 'Travel'],
+        lifestyle: ['Non-smoker'],
       ),
     ]);
   }
@@ -175,17 +321,40 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     chatThreads.addAll([
       ChatThread(
         id: '1',
-        name: 'Angelina, 29',
-        imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-        initialMessage: 'That gallery exhibition was stunning. Have you visited it?',
-        initialTime: '10:42 AM',
+        name: 'Maya',
+        imageUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80',
+        initialMessage: 'That sounds like a perfect plan for Saturday! ☕',
+        initialTime: '12:45 PM',
+        unread: true,
+        online: true,
       ),
       ChatThread(
         id: '2',
-        name: 'Marcus, 32',
+        name: 'David',
         imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-        initialMessage: 'The notes of vintage Bordeaux are incomparable.',
+        initialMessage: 'I really enjoyed that documentary too!',
         initialTime: 'Yesterday',
+      ),
+      ChatThread(
+        id: '3',
+        name: 'Chloe',
+        imageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80',
+        initialMessage: 'How was your weekend hiking trip?',
+        initialTime: 'Yesterday',
+      ),
+      ChatThread(
+        id: '4',
+        name: 'Alex',
+        imageUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
+        initialMessage: 'Haha, that\'s hilarious! I can\'t believe that happened.',
+        initialTime: 'Tuesday',
+      ),
+      ChatThread(
+        id: '5',
+        name: 'Sarah',
+        imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+        initialMessage: 'Let me know if you want the link to that playlist.',
+        initialTime: 'Monday',
       ),
     ]);
   }

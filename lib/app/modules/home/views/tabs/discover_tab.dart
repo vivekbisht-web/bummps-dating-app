@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../controllers/home_controller.dart';
+import 'profile_details_view.dart';
 
 class DiscoverTab extends GetView<HomeController> {
   const DiscoverTab({super.key});
@@ -109,6 +110,12 @@ class _TopDraggableCard extends StatelessWidget {
     final ProfileCardData topProfile = controller.profiles.first;
 
     return GestureDetector(
+      onTap: () {
+        Get.to(
+          () => ProfileDetailsView(profile: topProfile, controller: controller),
+          transition: Transition.downToUp,
+        );
+      },
       onPanUpdate: (details) {
         controller.updateCardPosition(
           controller.cardX.value + details.delta.dx,

@@ -6,7 +6,6 @@ import '../../../core/theme/app_text_styles.dart';
 import '../controllers/home_controller.dart';
 import 'tabs/discover_tab.dart';
 import 'tabs/matches_tab.dart';
-import 'tabs/messages_tab.dart';
 import 'tabs/profile_tab.dart';
 
 class HomeView extends GetView<HomeController> {
@@ -23,8 +22,6 @@ class HomeView extends GetView<HomeController> {
           case 1:
             return const MatchesTab();
           case 2:
-            return const MessagesTab();
-          case 3:
             return const ProfileTab();
           default:
             return const DiscoverTab();
@@ -44,39 +41,32 @@ class _PremiumBottomNavBar extends StatelessWidget {
     return Container(
       height: 90,
       decoration: const BoxDecoration(
-        color: AppColors.card,
+        color: Colors.black,
         border: Border(
           top: BorderSide(color: AppColors.divider, width: 1),
         ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       child: SafeArea(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _NavBarItem(
               index: 0,
-              icon: Icons.explore_outlined,
-              selectedIcon: Icons.explore,
-              label: 'Discover',
+              icon: Icons.style_outlined,
+              selectedIcon: Icons.style,
+              label: 'Discovery',
               controller: controller,
             ),
             _NavBarItem(
               index: 1,
-              icon: Icons.favorite_border,
-              selectedIcon: Icons.favorite,
+              icon: Icons.forum_outlined,
+              selectedIcon: Icons.forum,
               label: 'Matches',
               controller: controller,
             ),
             _NavBarItem(
               index: 2,
-              icon: Icons.forum_outlined,
-              selectedIcon: Icons.forum,
-              label: 'Messages',
-              controller: controller,
-            ),
-            _NavBarItem(
-              index: 3,
               icon: Icons.person_outline,
               selectedIcon: Icons.person,
               label: 'Profile',
@@ -112,34 +102,38 @@ class _NavBarItem extends StatelessWidget {
       return GestureDetector(
         onTap: () => controller.activeTab.value = index,
         behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.gold.withOpacity(0.08) : Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
-            border: isSelected
-                ? Border.all(color: AppColors.gold.withOpacity(0.3), width: 1)
-                : null,
-          ),
-          child: Row(
+        child: SizedBox(
+          width: 80,
+          child: Column(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 isSelected ? selectedIcon : icon,
-                color: isSelected ? AppColors.gold : AppColors.textSecondary,
-                size: 22,
+                color: isSelected ? AppColors.gold : AppColors.textMuted,
+                size: 24,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: AppTextStyles.caption.copyWith(
+                  color: isSelected ? AppColors.gold : AppColors.textMuted,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  fontSize: 11,
+                ),
               ),
               if (isSelected) ...[
-                const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: AppTextStyles.caption.copyWith(
+                const SizedBox(height: 3),
+                Container(
+                  width: 4,
+                  height: 4,
+                  decoration: const BoxDecoration(
                     color: AppColors.gold,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
+                    shape: BoxShape.circle,
                   ),
                 ),
+              ] else ...[
+                const SizedBox(height: 7), // Maintain alignment spacer
               ]
             ],
           ),
