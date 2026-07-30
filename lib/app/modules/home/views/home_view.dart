@@ -7,6 +7,7 @@ import '../controllers/home_controller.dart';
 import 'tabs/discover_tab.dart';
 import 'tabs/matches_tab.dart';
 import 'tabs/profile_tab.dart';
+import 'tabs/community_tab.dart';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({super.key});
@@ -22,6 +23,8 @@ class HomeView extends GetView<HomeController> {
           case 1:
             return const MatchesTab();
           case 2:
+            return const CommunityTab();
+          case 3:
             return const ProfileTab();
           default:
             return const DiscoverTab();
@@ -46,27 +49,34 @@ class _PremiumBottomNavBar extends StatelessWidget {
           top: BorderSide(color: AppColors.divider, width: 1),
         ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: SafeArea(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _NavBarItem(
               index: 0,
-              icon: Icons.style_outlined,
-              selectedIcon: Icons.style,
-              label: 'Discovery',
+              icon: Icons.explore_outlined,
+              selectedIcon: Icons.explore,
+              label: 'Discover',
               controller: controller,
             ),
             _NavBarItem(
               index: 1,
-              icon: Icons.forum_outlined,
-              selectedIcon: Icons.forum,
+              icon: Icons.chat_bubble_outline,
+              selectedIcon: Icons.chat_bubble,
               label: 'Matches',
               controller: controller,
             ),
             _NavBarItem(
               index: 2,
+              icon: Icons.people_outline,
+              selectedIcon: Icons.people,
+              label: 'Community',
+              controller: controller,
+            ),
+            _NavBarItem(
+              index: 3,
               icon: Icons.person_outline,
               selectedIcon: Icons.person,
               label: 'Profile',

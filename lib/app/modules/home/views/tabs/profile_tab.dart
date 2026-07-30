@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../routes/app_pages.dart';
 import '../../controllers/home_controller.dart';
 import '../../../profile_setup/controllers/profile_setup_controller.dart';
 
@@ -183,6 +184,12 @@ class ProfileTab extends GetView<HomeController> {
                       showDivider: true,
                     ),
                     _buildSettingsRow(
+                      icon: Icons.favorite_border,
+                      title: 'Liked History',
+                      onTap: () => Get.toNamed(Routes.likedHistory),
+                      showDivider: true,
+                    ),
+                    _buildSettingsRow(
                       icon: Icons.lock_outline,
                       title: 'Privacy',
                       onTap: () {},
@@ -200,82 +207,85 @@ class ProfileTab extends GetView<HomeController> {
               const SizedBox(height: 16),
 
               // --- BUMMPS Gold Upgrade Card ---
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFF2A2211),
-                      Color(0xFF16130C),
-                    ],
+              GestureDetector(
+                onTap: () => Get.toNamed(Routes.likedHistory),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF2A2211),
+                        Color(0xFF16130C),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.gold.withOpacity(0.3), width: 1.0),
                   ),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.gold.withOpacity(0.3), width: 1.0),
-                ),
-                child: Row(
-                  children: [
-                    // Gold badge icon in a rounded square
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppColors.gold.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.gold.withOpacity(0.3)),
-                      ),
-                      child: const Icon(
-                        Icons.workspace_premium,
-                        color: AppColors.gold,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-
-                    // Title & Description
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'BUMMPS Gold',
-                            style: AppTextStyles.titleMedium.copyWith(
-                              color: AppColors.gold,
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'See who liked you & more',
-                            style: AppTextStyles.caption.copyWith(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // UPGRADE action
-                    TextButton(
-                      onPressed: () {},
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: Text(
-                        'UPGRADE',
-                        style: AppTextStyles.button.copyWith(
+                  child: Row(
+                    children: [
+                      // Gold badge icon in a rounded square
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.gold.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+                        ),
+                        child: const Icon(
+                          Icons.workspace_premium,
                           color: AppColors.gold,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
+                          size: 24,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 16),
+
+                      // Title & Description
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'BUMMPS Gold',
+                              style: AppTextStyles.titleMedium.copyWith(
+                                color: AppColors.gold,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'See who liked you & more',
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // UPGRADE action
+                      TextButton(
+                        onPressed: () => Get.toNamed(Routes.likedHistory),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          'UPGRADE',
+                          style: AppTextStyles.button.copyWith(
+                            color: AppColors.gold,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 24),

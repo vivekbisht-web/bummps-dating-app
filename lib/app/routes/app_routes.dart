@@ -10,6 +10,7 @@ abstract class Routes {
   static const profileSetup = _Paths.profileSetup;
   static const home = _Paths.home;
   static const chatDetail = _Paths.chatDetail;
+  static const likedHistory = _Paths.likedHistory;
 }
 
 abstract class _Paths {
@@ -21,4 +22,5 @@ abstract class _Paths {
   static const profileSetup = '/profile-setup';
   static const home = '/home';
   static const chatDetail = '/chat-detail';
+  static const likedHistory = '/liked-history';
 }

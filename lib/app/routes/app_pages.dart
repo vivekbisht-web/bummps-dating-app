@@ -10,6 +10,7 @@ import '../modules/onboarding/views/onboarding_view.dart';
 import '../modules/profile_setup/bindings/profile_setup_binding.dart';
 import '../modules/profile_setup/views/profile_setup_view.dart';
 import '../modules/home/views/chat_detail_view.dart';
+import '../modules/home/views/liked_history_view.dart';
 
 part 'app_routes.dart';
 
@@ -54,6 +55,11 @@ class AppPages {
     GetPage(
       name: _Paths.chatDetail,
       page: () => const ChatDetailView(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: _Paths.likedHistory,
+      page: () => const LikedHistoryView(),
       transition: Transition.rightToLeft,
     ),
   ];
