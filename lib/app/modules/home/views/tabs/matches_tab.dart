@@ -67,12 +67,7 @@ class MatchesTab extends GetView<HomeController> {
                       final match = controller.matches[index];
                       return GestureDetector(
                         onTap: () {
-                          // Open chat thread for this matched user
-                          final chatName = '${match.name}, ${match.age}';
-                          final chat = controller.chatThreads.firstWhere(
-                            (element) => element.name.startsWith(match.name),
-                            orElse: () => controller.chatThreads.first,
-                          );
+                          final chat = controller.getOrCreateChatThread(match);
                           controller.openChatDetail(chat);
                         },
                         child: Container(

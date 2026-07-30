@@ -9,6 +9,7 @@ import '../modules/onboarding/bindings/onboarding_binding.dart';
 import '../modules/onboarding/views/onboarding_view.dart';
 import '../modules/profile_setup/bindings/profile_setup_binding.dart';
 import '../modules/profile_setup/views/profile_setup_view.dart';
+import '../modules/home/views/chat_detail_view.dart';
 
 part 'app_routes.dart';
 
@@ -49,6 +50,11 @@ class AppPages {
       page: () => const HomeView(),
       binding: HomeBinding(),
       transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: _Paths.chatDetail,
+      page: () => const ChatDetailView(),
+      transition: Transition.rightToLeft,
     ),
   ];
 }

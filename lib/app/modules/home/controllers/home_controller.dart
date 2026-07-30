@@ -53,6 +53,7 @@ class ChatThread {
   final RxList<Map<String, dynamic>> messages;
   final RxBool isUnread;
   final RxBool isOnline;
+  final RxBool isTyping;
 
   ChatThread({
     required this.id,
@@ -62,10 +63,12 @@ class ChatThread {
     required String initialTime,
     bool unread = false,
     bool online = false,
+    bool typing = false,
   })  : lastMessage = initialMessage.obs,
         time = initialTime.obs,
         isUnread = unread.obs,
         isOnline = online.obs,
+        isTyping = typing.obs,
         messages = <Map<String, dynamic>>[
           {'text': initialMessage, 'sender': 'them', 'time': initialTime}
         ].obs;
@@ -502,16 +505,40 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     final String chatName = '${profile.name}, ${profile.age}';
     final bool exists = chatThreads.any((element) => element.name == chatName);
     if (!exists) {
-      chatThreads.insert(
-        0,
-        ChatThread(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          name: chatName,
-          imageUrl: profile.imageUrl,
-          initialMessage: 'You matched! Say hello to ${profile.name}.',
-          initialTime: 'Just Now',
-        ),
+      final newChat = ChatThread(
+        id: profile.id,
+        name: chatName,
+        imageUrl: profile.imageUrl,
+        initialMessage: profile.name == 'Elena'
+            ? "I'd love to continue that discussion over dinner. I know a quiet spot that would be perfect."
+            : 'You matched! Say hello to ${profile.name}.',
+        initialTime: profile.name == 'Elena' ? '10:18 PM' : 'Just Now',
+        online: true,
+        typing: profile.name == 'Elena',
       );
+      if (profile.name == 'Elena') {
+        newChat.messages.assignAll([
+          {
+            'text': 'It was a pleasure meeting you at the gala last night. The collection was truly inspiring.',
+            'sender': 'them',
+            'time': '10:14 PM',
+            'date': 'MONDAY, OCTOBER 24',
+          },
+          {
+            'text': 'Likewise, Elena. I particularly enjoyed our conversation regarding the minimalist influence on modern horology.',
+            'sender': 'me',
+            'time': '10:16 PM',
+            'date': 'MONDAY, OCTOBER 24',
+          },
+          {
+            'text': "I'd love to continue that discussion over dinner. I know a quiet spot that would be perfect.",
+            'sender': 'them',
+            'time': '10:18 PM',
+            'date': 'MONDAY, OCTOBER 24',
+          },
+        ]);
+      }
+      chatThreads.insert(0, newChat);
     }
 
     Get.dialog(
@@ -634,183 +661,95 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   // --- Messaging Chat Detail View ---
 
   void openChatDetail(ChatThread chat) {
-    Get.bottomSheet(
-      Container(
-        height: Get.height * 0.85,
-        decoration: const BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-        ),
-        child: Column(
-          children: [
-            // Chat header
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: const BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: AppColors.divider, width: 1),
-                ),
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    backgroundImage: NetworkImage(chat.imageUrl),
-                    radius: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          chat.name,
-                          style: AppTextStyles.titleMedium,
-                        ),
-                        Row(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: AppColors.success,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Active now',
-                              style: AppTextStyles.caption.copyWith(color: AppColors.success),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: AppColors.textPrimary),
-                    onPressed: () => Get.back(),
-                  ),
-                ],
-              ),
-            ),
-
-            // Messages area
-            Expanded(
-              child: Obx(
-                () => ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  reverse: true,
-                  itemCount: chat.messages.length,
-                  itemBuilder: (context, index) {
-                    // Reversed index because of scrolling reverse
-                    final msg = chat.messages[chat.messages.length - 1 - index];
-                    final bool isMe = msg['sender'] == 'me';
-                    return Align(
-                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: isMe ? AppColors.gold : AppColors.surfaceElevated,
-                          borderRadius: BorderRadius.only(
-                            topLeft: const Radius.circular(16),
-                            topRight: const Radius.circular(16),
-                            bottomLeft: Radius.circular(isMe ? 16 : 0),
-                            bottomRight: Radius.circular(isMe ? 0 : 16),
-                          ),
-                        ),
-                        child: Text(
-                          msg['text'],
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: isMe ? AppColors.onGold : AppColors.textPrimary,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-
-            // Text input area
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              decoration: const BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: AppColors.divider, width: 1),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(28),
-                        border: Border.all(color: AppColors.divider),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: TextField(
-                        controller: chatInputController,
-                        style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
-                        decoration: const InputDecoration(
-                          hintText: 'Type a message...',
-                          hintStyle: TextStyle(color: AppColors.textMuted),
-                          border: InputBorder.none,
-                        ),
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (value) => _sendMessage(chat),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: () => _sendMessage(chat),
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: const BoxDecoration(
-                        gradient: AppColors.goldGradient,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.send,
-                        color: AppColors.onGold,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      isScrollControlled: true,
-    );
+    Get.toNamed(Routes.chatDetail, arguments: chat);
   }
 
-  void _sendMessage(ChatThread chat) {
+  ChatThread getOrCreateChatThread(ProfileCardData match) {
+    final chatName = '${match.name}, ${match.age}';
+    final existingChat = chatThreads.firstWhereOrNull(
+      (element) => element.name.startsWith(match.name),
+    );
+    if (existingChat != null) {
+      return existingChat;
+    }
+
+    // Create new chat thread
+    final newChat = ChatThread(
+      id: match.id,
+      name: chatName,
+      imageUrl: match.imageUrl,
+      initialMessage: match.name == 'Elena'
+          ? "I'd love to continue that discussion over dinner. I know a quiet spot that would be perfect."
+          : 'You matched! Say hello to ${match.name}.',
+      initialTime: match.name == 'Elena' ? '10:18 PM' : 'Just Now',
+      online: true,
+      typing: match.name == 'Elena',
+    );
+
+    if (match.name == 'Elena') {
+      newChat.messages.assignAll([
+        {
+          'text': 'It was a pleasure meeting you at the gala last night. The collection was truly inspiring.',
+          'sender': 'them',
+          'time': '10:14 PM',
+          'date': 'MONDAY, OCTOBER 24',
+        },
+        {
+          'text': 'Likewise, Elena. I particularly enjoyed our conversation regarding the minimalist influence on modern horology.',
+          'sender': 'me',
+          'time': '10:16 PM',
+          'date': 'MONDAY, OCTOBER 24',
+        },
+        {
+          'text': "I'd love to continue that discussion over dinner. I know a quiet spot that would be perfect.",
+          'sender': 'them',
+          'time': '10:18 PM',
+          'date': 'MONDAY, OCTOBER 24',
+        },
+      ]);
+    }
+
+    chatThreads.insert(0, newChat);
+    return newChat;
+  }
+
+  void sendMessage(ChatThread chat) {
     final text = chatInputController.text.trim();
     if (text.isEmpty) return;
 
     chatInputController.clear();
     
     // Add my message
-    final String time = 'Just Now';
-    chat.messages.add({'text': text, 'sender': 'me', 'time': time});
+    final String time = _formatCurrentTime();
+    chat.messages.add({
+      'text': text, 
+      'sender': 'me', 
+      'time': time,
+      'date': 'TODAY'
+    });
     chat.lastMessage.value = text;
     chat.time.value = time;
+    chat.isTyping.value = false;
 
     // Simulate automatic reply after 1.5 seconds for a premium interactive feel
     _simulateReply(chat, text);
   }
 
+  String _formatCurrentTime() {
+    final now = DateTime.now();
+    final hour = now.hour > 12 ? now.hour - 12 : (now.hour == 0 ? 12 : now.hour);
+    final minute = now.minute.toString().padLeft(2, '0');
+    final ampm = now.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $ampm';
+  }
+
   void _simulateReply(ChatThread chat, String myMessage) async {
-    await Future.delayed(const Duration(milliseconds: 1500));
+    // Wait for the user to read
+    await Future.delayed(const Duration(milliseconds: 1000));
+    chat.isTyping.value = true;
+    
+    // Wait for typing animation
+    await Future.delayed(const Duration(milliseconds: 2500));
     
     String replyText = "That sounds fascinating! Tell me more about your thoughts.";
     final msgLower = myMessage.toLowerCase();
@@ -822,9 +761,16 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
       replyText = "I'd love to organize a meeting! Let's find a beautiful quiet spot.";
     }
 
-    chat.messages.add({'text': replyText, 'sender': 'them', 'time': 'Just Now'});
+    final String time = _formatCurrentTime();
+    chat.messages.add({
+      'text': replyText, 
+      'sender': 'them', 
+      'time': time,
+      'date': 'TODAY'
+    });
     chat.lastMessage.value = replyText;
-    chat.time.value = 'Just Now';
+    chat.time.value = time;
+    chat.isTyping.value = false;
   }
 
   // --- Tab Profile Options ---

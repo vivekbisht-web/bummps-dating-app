@@ -123,17 +123,32 @@ class _NavBarItem extends StatelessWidget {
                 ),
               ),
               if (isSelected) ...[
-                const SizedBox(height: 3),
-                Container(
-                  width: 4,
-                  height: 4,
-                  decoration: const BoxDecoration(
-                    color: AppColors.gold,
-                    shape: BoxShape.circle,
+                const SizedBox(height: 2),
+                SizedBox(
+                  height: 12,
+                  child: Center(
+                    child: index == 1
+                        ? const Text(
+                            '+',
+                            style: TextStyle(
+                              color: AppColors.gold,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                              height: 1.0,
+                            ),
+                          )
+                        : Container(
+                            width: 4,
+                            height: 4,
+                            decoration: const BoxDecoration(
+                              color: AppColors.gold,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
                   ),
                 ),
               ] else ...[
-                const SizedBox(height: 7), // Maintain alignment spacer
+                const SizedBox(height: 14), // Maintain alignment spacer
               ]
             ],
           ),

@@ -13,10 +13,10 @@ class ProfileTab extends GetView<HomeController> {
   @override
   Widget build(BuildContext context) {
     // Safely retrieve setup info if registered
-    String name = 'Alexander';
-    int age = 29;
-    String location = 'New Delhi, India';
-    String job = 'Software Architect';
+    String name = 'Julianne Carter';
+    int age = 28;
+    String location = 'San Francisco';
+    String job = 'Visual Designer';
     String? photoPath;
 
     if (Get.isRegistered<ProfileSetupController>()) {
@@ -39,6 +39,16 @@ class ProfileTab extends GetView<HomeController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 16.0),
+          child: Image.asset(
+            'assets/images/bummps-icon.png',
+            fit: BoxFit.contain,
+          ),
+        ),
+        leadingWidth: 48,
         title: Image.asset(
           'assets/images/bummps..png',
           height: 18,
@@ -46,217 +56,270 @@ class ProfileTab extends GetView<HomeController> {
         ),
         centerTitle: true,
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings, color: AppColors.textPrimary),
-            onPressed: () {
-              Get.snackbar(
-                'Settings',
-                'Advanced settings menu coming soon.',
-                snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: AppColors.surface,
-                colorText: AppColors.textPrimary,
-              );
-            },
-          ),
-        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // --- Profile Avatar Stack ---
-              Center(
-                child: SizedBox(
-                  width: 140,
-                  height: 140,
-                  child: Stack(
-                    children: [
-                      // Golden glowing border ring
-                      Container(
-                        width: 140,
-                        height: 140,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.gold, width: 2.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.gold.withOpacity(0.12),
-                              blurRadius: 20,
-                              spreadRadius: 4,
-                            ),
-                          ],
-                        ),
-                        padding: const EdgeInsets.all(4),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(70),
-                          child: _buildProfilePhoto(photoPath),
-                        ),
-                      ),
-                      
-                      // Edit badge
-                      Positioned(
-                        bottom: 0,
-                        right: 4,
-                        child: GestureDetector(
-                          onTap: controller.editProfile,
-                          child: Container(
-                            decoration: const BoxDecoration(
-                              color: AppColors.gold,
-                              shape: BoxShape.circle,
-                            ),
-                            padding: const EdgeInsets.all(8),
-                            child: const Icon(
-                              Icons.edit,
-                              color: Colors.black,
-                              size: 16,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-
-              // Name, Age and Verified badge
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '$name, $age',
-                    style: AppTextStyles.headlineMedium.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(width: 6),
-                  const Icon(Icons.verified, color: AppColors.gold, size: 22),
-                ],
-              ),
-              const SizedBox(height: 6),
-
-              // Occupation and Location details
-              Text(
-                job,
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.location_on_outlined, color: AppColors.textMuted, size: 14),
-                  const SizedBox(width: 4),
-                  Text(
-                    location,
-                    style: AppTextStyles.caption.copyWith(color: AppColors.textMuted),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 28),
-
-              // --- Premium Status Card ---
+              // --- Main User Card ---
               Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFF1E1C15),
-                      Color(0xFF141310),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.gold.withOpacity(0.55), width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.gold.withOpacity(0.04),
-                      blurRadius: 16,
-                    ),
-                  ],
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.gold.withOpacity(0.35), width: 1.0),
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    // Avatar stack
+                    Stack(
                       children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.workspace_premium, color: AppColors.gold, size: 24),
-                            const SizedBox(width: 8),
-                            Text(
-                              'BUMMPS GOLD',
-                              style: AppTextStyles.titleMedium.copyWith(
-                                color: AppColors.gold,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.5,
-                              ),
-                            ),
-                          ],
-                        ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          width: 100,
+                          height: 100,
                           decoration: BoxDecoration(
-                            color: AppColors.gold.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.gold, width: 1),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppColors.gold, width: 2.0),
                           ),
-                          child: Text(
-                            'ACTIVE',
-                            style: AppTextStyles.caption.copyWith(
-                              color: AppColors.gold,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 9,
+                          padding: const EdgeInsets.all(2),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(50),
+                            child: _buildProfilePhoto(photoPath),
+                          ),
+                        ),
+                        // Floating edit pencil badge
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: GestureDetector(
+                            onTap: controller.editProfile,
+                            child: Container(
+                              width: 28,
+                              height: 28,
+                              decoration: const BoxDecoration(
+                                color: AppColors.gold,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.edit,
+                                color: Colors.black,
+                                size: 14,
+                              ),
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
+
+                    // Name, Age
                     Text(
-                      'Premium feature ecosystem is fully active. You have priority matching priority, infinite rewinds, and weekly profile spotlight boosts.',
+                      '$name, $age',
+                      style: AppTextStyles.headlineMedium.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 22,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+
+                    // Job in Location
+                    Text(
+                      '$job in $location',
                       style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary.withOpacity(0.85),
-                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // EDIT PROFILE button
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.gold,
+                        foregroundColor: AppColors.onGold,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                      onPressed: controller.editProfile,
+                      child: Text(
+                        'EDIT PROFILE',
+                        style: AppTextStyles.button.copyWith(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.0,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 16),
 
-              // --- Action Options List ---
-              _ProfileOptionItem(
-                icon: Icons.shield_outlined,
-                title: 'Verification Status',
-                subtitle: 'Verified Badge Active',
-                trailing: const Icon(Icons.check_circle, color: AppColors.success, size: 20),
-                onTap: () {},
+              // --- Grouped Settings Menu ---
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.divider),
+                ),
+                child: Column(
+                  children: [
+                    _buildSettingsRow(
+                      icon: Icons.person_outline,
+                      title: 'Account',
+                      onTap: () {},
+                      showDivider: true,
+                    ),
+                    _buildSettingsRow(
+                      icon: Icons.notifications_none_outlined,
+                      title: 'Notifications',
+                      onTap: () {},
+                      showDivider: true,
+                    ),
+                    _buildSettingsRow(
+                      icon: Icons.lock_outline,
+                      title: 'Privacy',
+                      onTap: () {},
+                      showDivider: true,
+                    ),
+                    _buildSettingsRow(
+                      icon: Icons.help_outline,
+                      title: 'Help & Support',
+                      onTap: () {},
+                      showDivider: false,
+                    ),
+                  ],
+                ),
               ),
-              _ProfileOptionItem(
-                icon: Icons.notifications_none_outlined,
-                title: 'Notifications',
-                subtitle: 'Push notifications configured',
-                onTap: () {},
+              const SizedBox(height: 16),
+
+              // --- BUMMPS Gold Upgrade Card ---
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF2A2211),
+                      Color(0xFF16130C),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.gold.withOpacity(0.3), width: 1.0),
+                ),
+                child: Row(
+                  children: [
+                    // Gold badge icon in a rounded square
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.gold.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+                      ),
+                      child: const Icon(
+                        Icons.workspace_premium,
+                        color: AppColors.gold,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+
+                    // Title & Description
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'BUMMPS Gold',
+                            style: AppTextStyles.titleMedium.copyWith(
+                              color: AppColors.gold,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'See who liked you & more',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // UPGRADE action
+                    TextButton(
+                      onPressed: () {},
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        'UPGRADE',
+                        style: AppTextStyles.button.copyWith(
+                          color: AppColors.gold,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              _ProfileOptionItem(
-                icon: Icons.lock_outline,
-                title: 'Privacy & Security',
-                subtitle: 'Manage encryption keys',
-                onTap: () {},
+              const SizedBox(height: 24),
+
+              // --- Logout Button ---
+              OutlinedButton(
+                onPressed: controller.logout,
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.gold, width: 1.5),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  minimumSize: const Size.fromHeight(56),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.logout, color: AppColors.gold, size: 20),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Logout',
+                      style: AppTextStyles.button.copyWith(
+                        color: AppColors.gold,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              _ProfileOptionItem(
-                icon: Icons.logout,
-                title: 'Sign Out',
-                subtitle: 'Securely clear auth token',
-                titleColor: AppColors.error,
-                onTap: controller.logout,
+              const SizedBox(height: 20),
+
+              // --- Version String ---
+              Center(
+                child: Text(
+                  'SoulSync v2.4.1 (Build 890)',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textMuted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
+              const SizedBox(height: 16),
             ],
           ),
         ),
@@ -264,11 +327,42 @@ class ProfileTab extends GetView<HomeController> {
     );
   }
 
+  Widget _buildSettingsRow({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    required bool showDivider,
+  }) {
+    return Column(
+      children: [
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+          leading: Icon(icon, color: AppColors.gold, size: 22),
+          title: Text(
+            title,
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w500,
+              fontSize: 15,
+            ),
+          ),
+          trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 18),
+          onTap: onTap,
+        ),
+        if (showDivider)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Divider(color: AppColors.divider, height: 1),
+          ),
+      ],
+    );
+  }
+
   Widget _buildProfilePhoto(String? photoPath) {
     if (photoPath == null) {
-      // Default fallback Network Avatar
+      // Default fallback female portrait (Julianne Carter)
       return Image.network(
-        'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
         fit: BoxFit.cover,
       );
     } else if (photoPath.startsWith('assets/')) {
@@ -287,59 +381,5 @@ class ProfileTab extends GetView<HomeController> {
         fit: BoxFit.cover,
       );
     }
-  }
-}
-
-class _ProfileOptionItem extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color? titleColor;
-  final Widget? trailing;
-  final VoidCallback onTap;
-
-  const _ProfileOptionItem({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    this.titleColor,
-    this.trailing,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: titleColor ?? AppColors.gold, size: 20),
-        ),
-        title: Text(
-          title,
-          style: AppTextStyles.titleMedium.copyWith(
-            fontSize: 15,
-            color: titleColor ?? AppColors.textPrimary,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: AppTextStyles.caption.copyWith(fontSize: 12),
-        ),
-        trailing: trailing ?? const Icon(Icons.chevron_right, color: AppColors.textMuted),
-        onTap: onTap,
-      ),
-    );
   }
 }
