@@ -11,6 +11,7 @@ abstract class Routes {
   static const home = _Paths.home;
   static const chatDetail = _Paths.chatDetail;
   static const likedHistory = _Paths.likedHistory;
+  static const plans = _Paths.plans;
 }
 
 abstract class _Paths {
@@ -23,4 +24,5 @@ abstract class _Paths {
   static const home = '/home';
   static const chatDetail = '/chat-detail';
   static const likedHistory = '/liked-history';
+  static const plans = '/plans';
 }

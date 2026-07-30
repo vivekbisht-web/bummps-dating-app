@@ -208,7 +208,7 @@ class ProfileTab extends GetView<HomeController> {
 
               // --- BUMMPS Gold Upgrade Card ---
               GestureDetector(
-                onTap: () => Get.toNamed(Routes.likedHistory),
+                onTap: () => Get.toNamed(Routes.plans),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   decoration: BoxDecoration(
@@ -268,7 +268,7 @@ class ProfileTab extends GetView<HomeController> {
 
                       // UPGRADE action
                       TextButton(
-                        onPressed: () => Get.toNamed(Routes.likedHistory),
+                        onPressed: () => Get.toNamed(Routes.plans),
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
                           minimumSize: Size.zero,
