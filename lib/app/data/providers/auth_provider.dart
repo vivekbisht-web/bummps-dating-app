@@ -22,6 +22,18 @@ class AuthProvider {
     );
   }
 
+  Future<List<UserProfile>> getFeed() async {
+    return await _dioClient.get<List<UserProfile>>(
+      AppConstants.feed,
+      fromJson: (json) {
+        if (json is List) {
+          return json.map((e) => UserProfile.fromJson(e as Map<String, dynamic>)).toList();
+        }
+        return [];
+      },
+    );
+  }
+
   Future<LoginResponse> login({
     required String email,
     required String password,

@@ -57,6 +57,13 @@ class DiscoverTab extends GetView<HomeController> {
           // Main Card Area
           Expanded(
             child: Obx(() {
+              if (controller.isLoadingFeed.value) {
+                return const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.gold),
+                  ),
+                );
+              }
               if (controller.profiles.isEmpty) {
                 return _NoMoreProfilesView(controller: controller);
               }

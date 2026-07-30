@@ -19,6 +19,9 @@ class UserProfile {
   final List<String> interests;
   final String profilePic;
   final List<String> additionalPhotos;
+  final bool isVerified;
+  final List<String> languages;
+  final List<String> lifestyle;
 
   UserProfile({
     required this.id,
@@ -39,6 +42,9 @@ class UserProfile {
     required this.interests,
     required this.profilePic,
     required this.additionalPhotos,
+    required this.isVerified,
+    required this.languages,
+    required this.lifestyle,
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
@@ -64,6 +70,22 @@ class UserProfile {
 
     // Parse additionalPhotos safely
     List<String> parsePhotos(dynamic value) {
+      if (value == null) return [];
+      if (value is List) {
+        return value.map((e) => e.toString()).toList();
+      }
+      return [];
+    }
+
+    List<String> parseLanguages(dynamic value) {
+      if (value == null) return [];
+      if (value is List) {
+        return value.map((e) => e.toString()).toList();
+      }
+      return [];
+    }
+
+    List<String> parseLifestyle(dynamic value) {
       if (value == null) return [];
       if (value is List) {
         return value.map((e) => e.toString()).toList();
@@ -117,6 +139,9 @@ class UserProfile {
       interests: parseInterests(data['interests']),
       profilePic: data['profilePic'] as String? ?? '',
       additionalPhotos: parsePhotos(data['additionalPhotos']),
+      isVerified: data['isVerified'] as bool? ?? false,
+      languages: parseLanguages(data['languages']),
+      lifestyle: parseLifestyle(data['lifestyle']),
     );
   }
 
@@ -140,6 +165,9 @@ class UserProfile {
       'interests': interests,
       'profilePic': profilePic,
       'additionalPhotos': additionalPhotos,
+      'isVerified': isVerified,
+      'languages': languages,
+      'lifestyle': lifestyle,
     };
   }
 }

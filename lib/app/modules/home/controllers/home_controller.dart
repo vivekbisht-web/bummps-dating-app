@@ -97,6 +97,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   final RxBool isBoostActive = false.obs;
   final RxInt boostTimeLeft = 0.obs;
 
+  // Active User Feed API Integration
+  final RxBool isLoadingFeed = false.obs;
+
   // Matches list
   final RxList<ProfileCardData> matches = <ProfileCardData>[].obs;
   final List<ProfileCardData> likesYouList = [];
@@ -138,89 +141,46 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     _loadInitialChats();
   }
 
-  void _loadInitialProfiles() {
-    profiles.addAll([
-      ProfileCardData(
-        name: 'Julien',
-        age: 31,
-        job: 'Venture Capitalist',
-        distance: '2 miles away',
-        bio: 'Seeking intellectual depth and shared ambition. Let\'s discuss venture markets, design systems, and post-modern architecture over vintage champagne.',
-        id: 'SS_0835',
-        matchScore: '98',
-        imageUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&auto=format&fit=crop&q=80',
-        location: 'New York, USA',
-        height: '170 cm',
-        education: 'Wharton School',
-        languages: 'EN, FR, ES',
-        interests: ['Photography', 'Travel', 'Architecture', 'Yachting', 'Oenology'],
-        lifestyle: ['Non-smoker', 'Social Drinker', 'Dog Lover'],
-      ),
-      ProfileCardData(
-        name: 'Elena',
-        age: 28,
-        job: 'Art Curator',
-        distance: '5 miles away',
-        bio: 'Seeking a connection that feels as timeless as a well-composed photograph. I find beauty in the brutalist architecture of the city and the silence of a midnight gallery. Let\'s discuss philosophy over a glass of vintage Bordeaux.',
-        id: 'SS_0192',
-        matchScore: '95',
-        imageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&auto=format&fit=crop&q=80',
-        location: 'Paris, France',
-        height: '175 cm',
-        education: 'Sorbonne',
-        languages: 'FR, EN, IT',
-        interests: ['Photography', 'Travel', 'Architecture', 'Oenology', 'Classical'],
-        lifestyle: ['Social Smoker', 'Occasional Drinks', 'Cat Lover'],
-      ),
-      ProfileCardData(
-        name: 'Sophia',
-        age: 29,
-        job: 'Boutique Architect',
-        distance: '4 miles away',
-        bio: 'Designing space, living deliberately. Looking for someone with structural vision, a shared taste for mid-century design, and spontaneous international travel.',
-        id: 'SS_0442',
-        matchScore: '92',
-        imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80',
-        location: 'Milan, Italy',
-        height: '168 cm',
-        education: 'Politecnico di Milano',
-        languages: 'IT, EN, DE',
-        interests: ['Architecture', 'Travel', 'Classical Music', 'Yachting', 'Oenology'],
-        lifestyle: ['Non-smoker', 'Occasional Drinks', 'Cat Lover'],
-      ),
-      ProfileCardData(
-        name: 'Marcus',
-        age: 32,
-        job: 'Fine Art Curator',
-        distance: '3 miles away',
-        bio: 'Passionate about aesthetic storytelling and rare collectibles. Looking for a partner to share silent galleries, sailing regattas, and vintage Bordeaux.',
-        id: 'SS_0571',
-        matchScore: '89',
-        imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop&q=80',
-        location: 'London, UK',
-        height: '182 cm',
-        education: 'Courtauld Institute',
-        languages: 'EN, FR',
-        interests: ['Photography', 'Architecture', 'Yachting', 'Oenology', 'Travel'],
-        lifestyle: ['Non-smoker', 'Social Drinker', 'Dog Lover'],
-      ),
-      ProfileCardData(
-        name: 'Julius',
-        age: 33,
-        job: 'Vineyard Owner',
-        distance: '8 miles away',
-        bio: 'Living close to nature, crafting elegance from soil. Let\'s share a glass of Cabernet under the constellations and debate continental philosophy.',
-        id: 'SS_0904',
-        matchScore: '87',
-        imageUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&auto=format&fit=crop&q=80',
-        location: 'Tuscany, Italy',
-        height: '185 cm',
-        education: 'University of Florence',
-        languages: 'IT, EN',
-        interests: ['Oenology', 'Classical Music', 'Travel', 'Photography', 'Architecture'],
-        lifestyle: ['Non-smoker', 'Social Drinker', 'Dog Lover'],
-      ),
-    ]);
+  Future<void> _loadInitialProfiles() async {
+    try {
+      isLoadingFeed.value = true;
+      profiles.clear();
+      final authRepo = Get.find<AuthRepository>();
+      final feedList = await authRepo.getFeed();
+      final mapped = feedList.map((up) {
+        String picUrl = up.profilePic;
+        if (picUrl.isEmpty) {
+          picUrl = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80';
+        } else if (!picUrl.startsWith('http') && !picUrl.startsWith('assets/')) {
+          picUrl = picUrl.startsWith('/')
+              ? 'https://datingapp-oz22.onrender.com$picUrl'
+              : 'https://datingapp-oz22.onrender.com/$picUrl';
+        }
+
+        return ProfileCardData(
+          id: up.id,
+          name: up.name,
+          age: up.age,
+          job: up.jobTitle.isNotEmpty ? up.jobTitle : 'Software Engineer',
+          distance: '${up.distancePreference} miles away',
+          bio: up.bio.isNotEmpty ? up.bio : 'Hello! I\'m looking for real connections.',
+          matchScore: '95',
+          imageUrl: picUrl,
+          isVerified: up.isVerified,
+          location: up.livingIn.isNotEmpty ? up.livingIn : 'New Delhi',
+          height: up.height.isNotEmpty ? '${up.height} cm' : '165 cm',
+          education: up.school.isNotEmpty ? up.school : 'Delhi University',
+          languages: up.languages.isNotEmpty ? up.languages.join(', ') : 'EN',
+          interests: up.interests,
+          lifestyle: up.lifestyle.isNotEmpty ? up.lifestyle : const ['Non-smoker', 'Social Drinker', 'Dog Lover'],
+        );
+      }).toList();
+      profiles.addAll(mapped);
+    } catch (e) {
+      debugPrint('[HomeController] Error loading discovery feed: $e');
+    } finally {
+      isLoadingFeed.value = false;
+    }
   }
 
   void _loadLikesYouList() {

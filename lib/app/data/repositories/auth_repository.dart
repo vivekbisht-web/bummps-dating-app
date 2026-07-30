@@ -14,6 +14,10 @@ class AuthRepository {
     return await _authProvider.getProfile(id);
   }
 
+  Future<List<UserProfile>> getFeed() async {
+    return await _authProvider.getFeed();
+  }
+
   Future<LoginResponse> login({
     required String email,
     required String password,
