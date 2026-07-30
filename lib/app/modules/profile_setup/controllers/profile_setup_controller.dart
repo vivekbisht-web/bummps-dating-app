@@ -16,8 +16,8 @@ class ProfileSetupController extends GetxController {
   final RxInt currentStep = 0.obs;
 
   /// Steps designed in Figma. The progress label still references "of 5".
-  static const int totalSteps = 5;
-  static const int implementedSteps = 5;
+  static const int totalSteps = 6;
+  static const int implementedSteps = 6;
   static const int maxInterests = 5;
   static const int maxBioLength = 300;
 
@@ -45,8 +45,9 @@ class ProfileSetupController extends GetxController {
 
   final RxDouble latitude = 28.6139.obs;
   final RxDouble longitude = 77.2090.obs;
-  final int agePreferenceMin = 20;
-  final int agePreferenceMax = 30;
+  final RxInt agePreferenceMin = 25.obs;
+  final RxInt agePreferenceMax = 35.obs;
+  final RxInt distancePreference = 25.obs;
 
   final List<String> genders = const ['Woman', 'Man', 'Non-binary'];
   final List<String> interestedInOptions = const ['Woman', 'Man', 'Everyone'];
@@ -266,8 +267,8 @@ class ProfileSetupController extends GetxController {
         'height': heightController.text.trim().isNotEmpty ? heightController.text.trim() : '185',
         'longitude': longitude.value.toString(),
         'latitude': latitude.value.toString(),
-        'distancePreference': '50',
-        'agePreference': jsonEncode({'min': agePreferenceMin, 'max': agePreferenceMax}),
+        'distancePreference': distancePreference.value.toString(),
+        'agePreference': jsonEncode({'min': agePreferenceMin.value, 'max': agePreferenceMax.value}),
         'interests': jsonEncode(selectedInterests.isNotEmpty ? selectedInterests : ['coding', 'music', 'travel']),
       };
 

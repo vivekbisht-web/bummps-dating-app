@@ -7,6 +7,7 @@ import '../controllers/profile_setup_controller.dart';
 import 'steps/about_you_step.dart';
 import 'steps/basic_info_step.dart';
 import 'steps/photos_step.dart';
+import 'steps/preferences_step.dart';
 import 'steps/preview_step.dart';
 import 'steps/verification_step.dart';
 
@@ -87,6 +88,7 @@ class ProfileScreen extends GetView<ProfileSetupController> {
                   BasicInfoStep(controller: controller),
                   AboutYouStep(controller: controller),
                   PhotosStep(controller: controller),
+                  PreferencesStep(controller: controller),
                   PreviewStep(controller: controller),
                   VerificationStep(controller: controller),
                 ],
