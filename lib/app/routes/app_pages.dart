@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import '../modules/auth/bindings/auth_binding.dart';
 import '../modules/auth/views/login_view.dart';
 import '../modules/auth/views/register_view.dart';
+import '../modules/home/bindings/home_binding.dart';
+import '../modules/home/views/home_view.dart';
 import '../modules/onboarding/bindings/onboarding_binding.dart';
 import '../modules/onboarding/views/onboarding_view.dart';
 import '../modules/profile_setup/bindings/profile_setup_binding.dart';
@@ -42,5 +44,12 @@ class AppPages {
       binding: ProfileSetupBinding(),
       transition: Transition.rightToLeftWithFade,
     ),
+    GetPage(
+      name: _Paths.home,
+      page: () => const HomeView(),
+      binding: HomeBinding(),
+      transition: Transition.fadeIn,
+    ),
   ];
 }
+

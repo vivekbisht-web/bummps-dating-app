@@ -207,7 +207,7 @@ class ProfileSetupController extends GetxController {
                   TextButton(
                     onPressed: () {
                       Get.close(1);
-                      Get.offAllNamed(Routes.onboarding);
+                      Get.offAllNamed(Routes.home);
                     },
                     child: Text(
                       'Done',

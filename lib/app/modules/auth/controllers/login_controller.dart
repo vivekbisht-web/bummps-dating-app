@@ -40,7 +40,7 @@ class LoginController extends GetxController {
       );
 
       // Route to profileSetup or home on successful authentication
-      Get.offAllNamed(Routes.profileSetup);
+      Get.offAllNamed(Routes.home);
     } on ApiException catch (e) {
       Get.snackbar(
         'Authentication Failed',
