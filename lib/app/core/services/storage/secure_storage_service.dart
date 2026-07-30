@@ -11,6 +11,7 @@ class SecureStorageService {
 
   static const String _keyToken = 'auth_token';
   static const String _keyRefreshToken = 'refresh_token';
+  static const String _keyUserId = 'user_id';
 
   // Generic write
   Future<void> write(String key, String value) async {
@@ -49,8 +50,17 @@ class SecureStorageService {
     return await read(_keyRefreshToken);
   }
 
+  Future<void> saveUserId(String userId) async {
+    await write(_keyUserId, userId);
+  }
+
+  Future<String?> getUserId() async {
+    return await read(_keyUserId);
+  }
+
   Future<void> deleteTokens() async {
     await delete(_keyToken);
     await delete(_keyRefreshToken);
+    await delete(_keyUserId);
   }
 }

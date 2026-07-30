@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../../core/services/storage/secure_storage_service.dart';
 import '../models/login_response.dart';
+import '../models/user_profile.dart';
 import '../providers/auth_provider.dart';
 
 class AuthRepository {
@@ -8,6 +9,10 @@ class AuthRepository {
   final SecureStorageService _secureStorageService;
 
   AuthRepository(this._authProvider, this._secureStorageService);
+
+  Future<UserProfile> getProfile(String id) async {
+    return await _authProvider.getProfile(id);
+  }
 
   Future<LoginResponse> login({
     required String email,
@@ -21,6 +26,7 @@ class AuthRepository {
 
     // Save tokens securely to device storage
     await _secureStorageService.saveToken(loginResponse.token);
+    await _secureStorageService.saveUserId(loginResponse.id);
     
     // If the API returns a refresh token in the future, save it here as well
     // await _secureStorageService.saveRefreshToken(loginResponse.refreshToken);
@@ -38,6 +44,7 @@ class AuthRepository {
 
     // Save tokens securely to device storage
     await _secureStorageService.saveToken(loginResponse.token);
+    await _secureStorageService.saveUserId(loginResponse.id);
 
     return loginResponse;
   }

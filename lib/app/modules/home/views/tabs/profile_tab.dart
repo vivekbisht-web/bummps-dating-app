@@ -13,30 +13,6 @@ class ProfileTab extends GetView<HomeController> {
 
   @override
   Widget build(BuildContext context) {
-    // Safely retrieve setup info if registered
-    String name = 'Julianne Carter';
-    int age = 28;
-    String location = 'San Francisco';
-    String job = 'Visual Designer';
-    String? photoPath;
-
-    if (Get.isRegistered<ProfileSetupController>()) {
-      final setupCtrl = Get.find<ProfileSetupController>();
-      if (setupCtrl.firstNameController.text.trim().isNotEmpty) {
-        name = setupCtrl.firstNameController.text.trim();
-      }
-      age = setupCtrl.age;
-      if (setupCtrl.locationController.text.trim().isNotEmpty) {
-        location = setupCtrl.locationController.text.trim();
-      }
-      if (setupCtrl.jobTitleController.text.trim().isNotEmpty) {
-        job = setupCtrl.jobTitleController.text.trim();
-      }
-      if (setupCtrl.photos[0] != null) {
-        photoPath = setupCtrl.photos[0];
-      }
-    }
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -65,101 +41,140 @@ class ProfileTab extends GetView<HomeController> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // --- Main User Card ---
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.gold.withOpacity(0.35), width: 1.0),
-                ),
-                child: Column(
-                  children: [
-                    // Avatar stack
-                    Stack(
-                      children: [
-                        Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: AppColors.gold, width: 2.0),
+              Obx(() {
+                final profile = controller.currentUserProfile.value;
+
+                String name = 'Julianne Carter';
+                int age = 28;
+                String location = 'San Francisco';
+                String job = 'Visual Designer';
+                String? photoPath;
+
+                if (profile != null) {
+                  name = profile.name;
+                  age = profile.age;
+                  if (profile.livingIn.isNotEmpty) {
+                    location = profile.livingIn;
+                  }
+                  if (profile.jobTitle.isNotEmpty) {
+                    job = profile.jobTitle;
+                  }
+                  if (profile.profilePic.isNotEmpty) {
+                    photoPath = profile.profilePic;
+                  }
+                } else if (Get.isRegistered<ProfileSetupController>()) {
+                  final setupCtrl = Get.find<ProfileSetupController>();
+                  if (setupCtrl.firstNameController.text.trim().isNotEmpty) {
+                    name = setupCtrl.firstNameController.text.trim();
+                  }
+                  age = setupCtrl.age;
+                  if (setupCtrl.locationController.text.trim().isNotEmpty) {
+                    location = setupCtrl.locationController.text.trim();
+                  }
+                  if (setupCtrl.jobTitleController.text.trim().isNotEmpty) {
+                    job = setupCtrl.jobTitleController.text.trim();
+                  }
+                  if (setupCtrl.photos[0] != null) {
+                    photoPath = setupCtrl.photos[0];
+                  }
+                }
+
+                return Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: AppColors.gold.withOpacity(0.35), width: 1.0),
+                  ),
+                  child: Column(
+                    children: [
+                      // Avatar stack
+                      Stack(
+                        children: [
+                          Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: AppColors.gold, width: 2.0),
+                            ),
+                            padding: const EdgeInsets.all(2),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(50),
+                              child: _buildProfilePhoto(photoPath),
+                            ),
                           ),
-                          padding: const EdgeInsets.all(2),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(50),
-                            child: _buildProfilePhoto(photoPath),
-                          ),
-                        ),
-                        // Floating edit pencil badge
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: GestureDetector(
-                            onTap: controller.editProfile,
-                            child: Container(
-                              width: 28,
-                              height: 28,
-                              decoration: const BoxDecoration(
-                                color: AppColors.gold,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.edit,
-                                color: Colors.black,
-                                size: 14,
+                          // Floating edit pencil badge
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: GestureDetector(
+                              onTap: controller.editProfile,
+                              child: Container(
+                                width: 28,
+                                height: 28,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.gold,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.edit,
+                                  color: Colors.black,
+                                  size: 14,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Name, Age
-                    Text(
-                      '$name, $age',
-                      style: AppTextStyles.headlineMedium.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 22,
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 6),
+                      const SizedBox(height: 16),
 
-                    // Job in Location
-                    Text(
-                      '$job in $location',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // EDIT PROFILE button
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.gold,
-                        foregroundColor: AppColors.onGold,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        minimumSize: const Size.fromHeight(48),
-                      ),
-                      onPressed: controller.editProfile,
-                      child: Text(
-                        'EDIT PROFILE',
-                        style: AppTextStyles.button.copyWith(
-                          fontSize: 14,
+                      // Name, Age
+                      Text(
+                        '$name, $age',
+                        style: AppTextStyles.headlineMedium.copyWith(
+                          color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          letterSpacing: 1.0,
+                          fontSize: 22,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
+                      const SizedBox(height: 6),
+
+                      // Job in Location
+                      Text(
+                        '$job in $location',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // EDIT PROFILE button
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.gold,
+                          foregroundColor: AppColors.onGold,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          minimumSize: const Size.fromHeight(48),
+                        ),
+                        onPressed: controller.editProfile,
+                        child: Text(
+                          'EDIT PROFILE',
+                          style: AppTextStyles.button.copyWith(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
               const SizedBox(height: 16),
 
               // --- Grouped Settings Menu ---
@@ -369,7 +384,7 @@ class ProfileTab extends GetView<HomeController> {
   }
 
   Widget _buildProfilePhoto(String? photoPath) {
-    if (photoPath == null) {
+    if (photoPath == null || photoPath.isEmpty) {
       // Default fallback female portrait (Julianne Carter)
       return Image.network(
         'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
@@ -384,6 +399,23 @@ class ProfileTab extends GetView<HomeController> {
       return Image.network(
         photoPath,
         fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => Image.network(
+          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+          fit: BoxFit.cover,
+        ),
+      );
+    } else if (photoPath.startsWith('/') || photoPath.contains('/')) {
+      // Relative server image path
+      final fullUrl = photoPath.startsWith('/')
+          ? 'https://datingapp-oz22.onrender.com$photoPath'
+          : 'https://datingapp-oz22.onrender.com/$photoPath';
+      return Image.network(
+        fullUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => Image.network(
+          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+          fit: BoxFit.cover,
+        ),
       );
     } else {
       return Image.file(

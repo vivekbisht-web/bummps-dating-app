@@ -5,6 +5,9 @@ import 'package:get/get.dart';
 import '../../../routes/app_pages.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/services/storage/secure_storage_service.dart';
+import '../../../data/repositories/auth_repository.dart';
+import '../../../data/models/user_profile.dart';
 
 /// Representation of a discover profile card.
 class ProfileCardData {
@@ -104,9 +107,31 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   // Text controller for chat inputs
   final TextEditingController chatInputController = TextEditingController();
 
+  // Active User Profile API Integration
+  final Rxn<UserProfile> currentUserProfile = Rxn<UserProfile>();
+  final RxBool isLoadingProfile = false.obs;
+
+  Future<void> fetchUserProfile() async {
+    try {
+      isLoadingProfile.value = true;
+      final storage = Get.find<SecureStorageService>();
+      final userId = await storage.getUserId();
+      if (userId != null && userId.isNotEmpty) {
+        final authRepo = Get.find<AuthRepository>();
+        final profile = await authRepo.getProfile(userId);
+        currentUserProfile.value = profile;
+      }
+    } catch (e) {
+      debugPrint('[HomeController] Error fetching user profile: $e');
+    } finally {
+      isLoadingProfile.value = false;
+    }
+  }
+
   @override
   void onInit() {
     super.onInit();
+    fetchUserProfile();
     _loadInitialProfiles();
     _loadLikesYouList();
     _loadInitialMatches();

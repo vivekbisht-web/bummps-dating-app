@@ -3,11 +3,24 @@ import 'package:dio/dio.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/network/dio_client.dart';
 import '../models/login_response.dart';
+import '../models/user_profile.dart';
 
 class AuthProvider {
   final DioClient _dioClient;
 
   AuthProvider(this._dioClient);
+
+  Future<UserProfile> getProfile(String id) async {
+    return await _dioClient.get<UserProfile>(
+      '${AppConstants.profile}/$id',
+      fromJson: (json) {
+        if (json is String) {
+          return UserProfile.fromJson(jsonDecode(json) as Map<String, dynamic>);
+        }
+        return UserProfile.fromJson(json as Map<String, dynamic>);
+      },
+    );
+  }
 
   Future<LoginResponse> login({
     required String email,

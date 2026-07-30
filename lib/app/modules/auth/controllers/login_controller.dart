@@ -69,11 +69,4 @@ class LoginController extends GetxController {
   void continueWithApple() => Get.snackbar('Bummps', 'Apple sign-in tapped');
 
   void goToRegister() => Get.toNamed(Routes.register);
-
-  @override
-  void onClose() {
-    emailController.dispose();
-    passwordController.dispose();
-    super.onClose();
-  }
 }

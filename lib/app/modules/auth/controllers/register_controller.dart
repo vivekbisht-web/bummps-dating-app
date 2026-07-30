@@ -43,12 +43,4 @@ class RegisterController extends GetxController {
       Get.offNamed(Routes.login);
     }
   }
-
-  @override
-  void onClose() {
-    nameController.dispose();
-    emailController.dispose();
-    passwordController.dispose();
-    super.onClose();
-  }
 }
