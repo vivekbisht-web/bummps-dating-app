@@ -38,6 +38,8 @@ class ProfileSetupController extends GetxController {
   final RxnString gender = RxnString();
   final RxnString interestedIn = RxnString();
   final RxList<String> selectedInterests = <String>[].obs;
+  final RxList<String> selectedLifestyle = <String>[].obs;
+  final RxList<String> selectedLanguages = <String>[].obs;
   final heightController = TextEditingController();
   final educationController = TextEditingController();
   final jobTitleController = TextEditingController();
@@ -51,13 +53,42 @@ class ProfileSetupController extends GetxController {
 
   final List<String> genders = const ['Woman', 'Man', 'Non-binary'];
   final List<String> interestedInOptions = const ['Woman', 'Man', 'Everyone'];
+
+  /// Interests — sent UPPERCASE to match API
   final List<String> interests = const [
-    'Photography',
-    'Architecture',
-    'Oenology',
-    'Travel',
-    'Classical Music',
-    'Yachting',
+    'PHOTOGRAPHY',
+    'ARCHITECTURE',
+    'FINE DINING',
+    'TRAVEL',
+    'ART GALLERIES',
+    'SAILING',
+    'FITNESS',
+    'MUSIC',
+    'READING',
+    'COOKING',
+  ];
+
+  /// Lifestyle options — sent UPPERCASE to match API
+  final List<String> lifestyleOptions = const [
+    'NON-SMOKER',
+    'SMOKER',
+    'FITNESS',
+    'SOCIAL DRINKER',
+    'DOG LOVER',
+    'CAT LOVER',
+    'VEGAN',
+  ];
+
+  /// Languages available
+  final List<String> languageOptions = const [
+    'English',
+    'French',
+    'Spanish',
+    'German',
+    'Italian',
+    'Hindi',
+    'Mandarin',
+    'Arabic',
   ];
 
   // --- Step 3: gallery ---
@@ -116,6 +147,32 @@ class ProfileSetupController extends GetxController {
   }
 
   bool isInterestSelected(String value) => selectedInterests.contains(value);
+
+  void toggleLifestyle(String value) {
+    if (selectedLifestyle.contains(value)) {
+      selectedLifestyle.remove(value);
+    } else {
+      selectedLifestyle.add(value);
+    }
+  }
+
+  bool isLifestyleSelected(String value) => selectedLifestyle.contains(value);
+
+  void toggleLanguage(String value) {
+    if (selectedLanguages.contains(value)) {
+      selectedLanguages.remove(value);
+    } else {
+      selectedLanguages.add(value);
+    }
+  }
+
+  bool isLanguageSelected(String value) => selectedLanguages.contains(value);
+
+  /// Returns the agePreference as a string label e.g. "25-35" or "50+"
+  String get agePreferenceLabel {
+    if (agePreferenceMax.value >= 100) return '50+';
+    return '${agePreferenceMin.value}-${agePreferenceMax.value}';
+  }
 
   Future<void> pickDob() async {
     final context = Get.context;
@@ -249,10 +306,14 @@ class ProfileSetupController extends GetxController {
     try {
       final authRepository = Get.find<AuthRepository>();
 
-      // Build fields Map
+      // Build fields Map — all keys must match the API exactly
       final Map<String, dynamic> data = {
-        'name': registerName.isNotEmpty ? registerName : (firstNameController.text.trim().isNotEmpty ? firstNameController.text.trim() : 'Sanidhya'),
-        'email': registerEmail.isNotEmpty ? registerEmail : 'test@example.com',
+        'name': registerName.isNotEmpty
+            ? registerName
+            : (firstNameController.text.trim().isNotEmpty
+                ? firstNameController.text.trim()
+                : 'Alex Johnson'),
+        'email': registerEmail.isNotEmpty ? registerEmail : 'alex@example.com',
         'password': registerPassword.isNotEmpty ? registerPassword : 'password123',
         'gender': _mapGender(gender.value),
         'interestedIn': _mapGender(interestedIn.value),
@@ -260,16 +321,40 @@ class ProfileSetupController extends GetxController {
         'bio': bioController.text.trim().isNotEmpty
             ? bioController.text.trim()
             : 'Seeking a connection that transcends the ordinary.',
-        'jobTitle': jobTitleController.text.trim().isNotEmpty ? jobTitleController.text.trim() : 'Software Engineer',
-        'company': companyController.text.trim().isNotEmpty ? companyController.text.trim() : 'Tech Corp',
-        'school': educationController.text.trim().isNotEmpty ? educationController.text.trim() : 'Delhi University',
-        'livingIn': locationController.text.trim().isNotEmpty ? locationController.text.trim() : 'New Delhi',
-        'height': heightController.text.trim().isNotEmpty ? heightController.text.trim() : '185',
+        'jobTitle': jobTitleController.text.trim().isNotEmpty
+            ? jobTitleController.text.trim()
+            : 'Architect',
+        'company': companyController.text.trim().isNotEmpty
+            ? companyController.text.trim()
+            : 'Studio Design',
+        'school': educationController.text.trim().isNotEmpty
+            ? educationController.text.trim()
+            : 'NYU',
+        'livingIn': locationController.text.trim().isNotEmpty
+            ? locationController.text.trim()
+            : 'New York, NY',
+        'height': heightController.text.trim().isNotEmpty
+            ? heightController.text.trim()
+            : '180',
         'longitude': longitude.value.toString(),
         'latitude': latitude.value.toString(),
         'distancePreference': distancePreference.value.toString(),
-        'agePreference': jsonEncode({'min': agePreferenceMin.value, 'max': agePreferenceMax.value}),
-        'interests': jsonEncode(selectedInterests.isNotEmpty ? selectedInterests : ['coding', 'music', 'travel']),
+        // API expects string format: "25-35" or "50+"
+        'agePreference': agePreferenceLabel,
+        // API expects JSON array of UPPERCASE strings e.g. ["FINE DINING","TRAVEL"]
+        'interests': jsonEncode(
+          selectedInterests.isNotEmpty
+              ? selectedInterests
+              : ['FINE DINING', 'ART GALLERIES', 'TRAVEL'],
+        ),
+        // API expects JSON array e.g. ["NON-SMOKER","FITNESS"]
+        'lifestyle': jsonEncode(
+          selectedLifestyle.isNotEmpty ? selectedLifestyle : ['NON-SMOKER'],
+        ),
+        // API expects JSON array e.g. ["English","French"]
+        'languages': jsonEncode(
+          selectedLanguages.isNotEmpty ? selectedLanguages : ['English'],
+        ),
       };
 
       final formDataMap = Map<String, dynamic>.from(data);

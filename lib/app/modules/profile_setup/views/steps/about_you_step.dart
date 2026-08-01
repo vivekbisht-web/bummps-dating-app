@@ -14,12 +14,37 @@ class AboutYouStep extends StatelessWidget {
   final ProfileSetupController controller;
 
   static const Map<String, IconData> _interestIcons = {
-    'Photography': Icons.camera_alt_outlined,
-    'Architecture': Icons.apartment_outlined,
-    'Oenology': Icons.wine_bar_outlined,
-    'Travel': Icons.flight_takeoff_outlined,
-    'Classical Music': Icons.music_note_outlined,
-    'Yachting': Icons.sailing_outlined,
+    'PHOTOGRAPHY': Icons.camera_alt_outlined,
+    'ARCHITECTURE': Icons.apartment_outlined,
+    'FINE DINING': Icons.restaurant_outlined,
+    'TRAVEL': Icons.flight_takeoff_outlined,
+    'ART GALLERIES': Icons.palette_outlined,
+    'SAILING': Icons.sailing_outlined,
+    'FITNESS': Icons.fitness_center_outlined,
+    'MUSIC': Icons.music_note_outlined,
+    'READING': Icons.menu_book_outlined,
+    'COOKING': Icons.outdoor_grill_outlined,
+  };
+
+  static const Map<String, IconData> _lifestyleIcons = {
+    'NON-SMOKER': Icons.smoke_free_outlined,
+    'SMOKER': Icons.smoking_rooms_outlined,
+    'FITNESS': Icons.fitness_center_outlined,
+    'SOCIAL DRINKER': Icons.local_bar_outlined,
+    'DOG LOVER': Icons.pets_outlined,
+    'CAT LOVER': Icons.pets_outlined,
+    'VEGAN': Icons.eco_outlined,
+  };
+
+  static const Map<String, IconData> _languageIcons = {
+    'English': Icons.language,
+    'French': Icons.language,
+    'Spanish': Icons.language,
+    'German': Icons.language,
+    'Italian': Icons.language,
+    'Hindi': Icons.language,
+    'Mandarin': Icons.language,
+    'Arabic': Icons.language,
   };
 
   @override
@@ -142,6 +167,46 @@ class AboutYouStep extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _sectionLabel('Lifestyle'),
+              Text('Select all that apply', style: AppTextStyles.caption),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Obx(
+            () => Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: controller.lifestyleOptions
+                  .map((l) => SelectableChip(
+                        label: l,
+                        icon: _lifestyleIcons[l],
+                        selected: controller.isLifestyleSelected(l),
+                        onTap: () => controller.toggleLifestyle(l),
+                      ))
+                  .toList(),
+            ),
+          ),
+          const SizedBox(height: 24),
+          _sectionLabel('Languages'),
+          const SizedBox(height: 10),
+          Obx(
+            () => Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: controller.languageOptions
+                  .map((lang) => SelectableChip(
+                        label: lang,
+                        icon: _languageIcons[lang],
+                        selected: controller.isLanguageSelected(lang),
+                        onTap: () => controller.toggleLanguage(lang),
+                      ))
+                  .toList(),
+            ),
           ),
           const SizedBox(height: 32),
           PrimaryButton(

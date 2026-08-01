@@ -7,6 +7,13 @@ class AppConstants {
   static const String login = 'auth/login';
   static const String register = 'auth/register';
   static const String profile = 'auth/profile';
-  static const String feed = 'users/feed';
+
+  // Matches Endpoints
+  static const String feed = 'matches/feed';
+  static const String matches = 'matches/my-matches';
+  static const String like = 'matches/like';
+  static const String pass = 'matches/pass';
+  static const String rewind = 'matches/rewind';
+  static const String filter = 'matches/filter';
 
 }

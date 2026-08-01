@@ -1,5 +1,5 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
+
 import 'package:get/get.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -9,6 +9,15 @@ import 'profile_details_view.dart';
 
 class DiscoverTab extends GetView<HomeController> {
   const DiscoverTab({super.key});
+
+  void _showFilterSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _FilterSheet(controller: controller),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,17 +47,13 @@ class DiscoverTab extends GetView<HomeController> {
                   fit: BoxFit.contain,
                 ),
                 IconButton(
-                  icon: const Icon(Icons.tune_outlined, color: AppColors.gold),
-                  onPressed: () {
-                    // Quick filters feedback
-                    Get.snackbar(
-                      'Preferences',
-                      'Filter preferences menu coming soon in Premium.',
-                      snackPosition: SnackPosition.TOP,
-                      backgroundColor: AppColors.surface,
-                      colorText: AppColors.textPrimary,
-                    );
-                  },
+                  icon: Obx(() => Icon(
+                    Icons.tune_outlined,
+                    color: controller.isFilterActive.value
+                        ? AppColors.gold
+                        : AppColors.textSecondary,
+                  )),
+                  onPressed: () => _showFilterSheet(context),
                 ),
               ],
             ),
@@ -604,6 +609,304 @@ class _NoMoreProfilesView extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Filter Bottom Sheet
+// ---------------------------------------------------------------------------
+class _FilterSheet extends StatefulWidget {
+  final HomeController controller;
+  const _FilterSheet({required this.controller});
+
+  @override
+  State<_FilterSheet> createState() => _FilterSheetState();
+}
+
+class _FilterSheetState extends State<_FilterSheet> {
+  // Local draft state — committed only when user taps Apply
+  String? _ageGroup;
+  double _maxDistance = 25;
+  final Set<String> _interests = {};
+  final Set<String> _lifestyle  = {};
+  final Set<String> _languages  = {};
+  double _minHeight = 150;
+  double _maxHeight = 200;
+  bool _isVerified = false;
+
+  static const List<String> _ageGroups = ['18-25', '25-35', '35-50', '50+'];
+  static const List<String> _allInterests = [
+    'PHOTOGRAPHY', 'ARCHITECTURE', 'FINE DINING', 'TRAVEL',
+    'ART GALLERIES', 'SAILING', 'FITNESS', 'MUSIC', 'READING', 'COOKING',
+  ];
+  static const List<String> _allLifestyle = [
+    'NON-SMOKER', 'SMOKER', 'FITNESS', 'SOCIAL DRINKER',
+    'DOG LOVER', 'CAT LOVER', 'VEGAN',
+  ];
+  static const List<String> _allLanguages = [
+    'English', 'French', 'Spanish', 'German',
+    'Italian', 'Hindi', 'Mandarin', 'Arabic',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-fill from currently active filters
+    final c = widget.controller;
+    _ageGroup    = c.activeAgeGroup;
+    _maxDistance = (c.activeMaxDistance ?? 25).toDouble();
+    _interests.addAll(c.activeInterests);
+    _lifestyle.addAll(c.activeLifestyle);
+    _languages.addAll(c.activeLanguages);
+    _minHeight   = (c.activeMinHeight ?? 150).toDouble();
+    _maxHeight   = (c.activeMaxHeight ?? 200).toDouble();
+    _isVerified  = c.activeIsVerified ?? false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.92,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (_, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              // Drag handle
+              const SizedBox(height: 12),
+              Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Filters',
+                        style: AppTextStyles.headlineMedium.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.bold)),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        widget.controller.clearFilter();
+                      },
+                      child: Text('Clear All',
+                          style: AppTextStyles.button.copyWith(
+                              color: AppColors.gold, letterSpacing: 0)),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(color: AppColors.divider),
+              // Scrollable filter body
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+                  children: [
+                    // Age Group
+                    _sectionLabel('Age Group'),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 10, runSpacing: 10,
+                      children: _ageGroups.map((ag) {
+                        final selected = _ageGroup == ag;
+                        return GestureDetector(
+                          onTap: () => setState(() =>
+                              _ageGroup = selected ? null : ag),
+                          child: _pill(ag, selected),
+                        );
+                      }).toList(),
+                    ),
+
+                    // Max Distance
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _sectionLabel('Max Distance'),
+                        Text('${_maxDistance.round()} km',
+                            style: AppTextStyles.button.copyWith(
+                                color: AppColors.gold, fontSize: 14)),
+                      ],
+                    ),
+                    SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        activeTrackColor: AppColors.gold,
+                        inactiveTrackColor: AppColors.divider,
+                        thumbColor: AppColors.gold,
+                        trackHeight: 3,
+                      ),
+                      child: Slider(
+                        value: _maxDistance,
+                        min: 1, max: 100,
+                        onChanged: (v) => setState(() => _maxDistance = v),
+                      ),
+                    ),
+
+                    // Height Range
+                    const SizedBox(height: 16),
+                    _sectionLabel('Height Range'),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Min: ${_minHeight.round()} cm',
+                            style: AppTextStyles.caption.copyWith(
+                                color: AppColors.textSecondary)),
+                        Text('Max: ${_maxHeight.round()} cm',
+                            style: AppTextStyles.caption.copyWith(
+                                color: AppColors.textSecondary)),
+                      ],
+                    ),
+                    SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        activeTrackColor: AppColors.gold,
+                        inactiveTrackColor: AppColors.divider,
+                        thumbColor: AppColors.gold,
+                        trackHeight: 3,
+                      ),
+                      child: RangeSlider(
+                        values: RangeValues(_minHeight, _maxHeight),
+                        min: 140, max: 220,
+                        activeColor: AppColors.gold,
+                        inactiveColor: AppColors.divider,
+                        onChanged: (v) => setState(() {
+                          _minHeight = v.start;
+                          _maxHeight = v.end;
+                        }),
+                      ),
+                    ),
+
+                    // Interests
+                    const SizedBox(height: 16),
+                    _sectionLabel('Interests'),
+                    const SizedBox(height: 10),
+                    _chipWrap(_allInterests, _interests),
+
+                    // Lifestyle
+                    const SizedBox(height: 24),
+                    _sectionLabel('Lifestyle'),
+                    const SizedBox(height: 10),
+                    _chipWrap(_allLifestyle, _lifestyle),
+
+                    // Languages
+                    const SizedBox(height: 24),
+                    _sectionLabel('Languages'),
+                    const SizedBox(height: 10),
+                    _chipWrap(_allLanguages, _languages),
+
+                    // Verified Only
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _sectionLabel('Verified Only'),
+                        Switch(
+                          value: _isVerified,
+                          activeColor: AppColors.gold,
+                          onChanged: (v) => setState(() => _isVerified = v),
+                        ),
+                      ],
+                    ),
+
+                    // Apply button
+                    const SizedBox(height: 32),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                        widget.controller.applyFilter(
+                          ageGroup:    _ageGroup,
+                          maxDistance: _maxDistance.round(),
+                          interests:   _interests.toList(),
+                          lifestyle:   _lifestyle.toList(),
+                          languages:   _languages.toList(),
+                          minHeight:   _minHeight.round(),
+                          maxHeight:   _maxHeight.round(),
+                          isVerified:  _isVerified,
+                        );
+                      },
+                      child: Container(
+                        height: 56,
+                        decoration: BoxDecoration(
+                          gradient: AppColors.goldGradient,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Center(
+                          child: Text('APPLY FILTERS',
+                              style: AppTextStyles.button),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _sectionLabel(String text) => Text(
+        text.toUpperCase(),
+        style: AppTextStyles.caption.copyWith(
+            color: AppColors.gold,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8),
+      );
+
+  Widget _pill(String label, bool selected) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.gold.withValues(alpha: 0.15) : AppColors.card,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? AppColors.gold : AppColors.divider,
+            width: 1.5,
+          ),
+        ),
+        child: Text(label,
+            style: AppTextStyles.bodyMedium.copyWith(
+                color: selected ? AppColors.gold : AppColors.textSecondary,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.normal)),
+      );
+
+  Widget _chipWrap(List<String> options, Set<String> selected) {
+    return Wrap(
+      spacing: 10, runSpacing: 10,
+      children: options.map((opt) {
+        final sel = selected.contains(opt);
+        return GestureDetector(
+          onTap: () => setState(() => sel ? selected.remove(opt) : selected.add(opt)),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: sel ? AppColors.gold.withValues(alpha: 0.15) : AppColors.card,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                  color: sel ? AppColors.gold : AppColors.divider, width: 1.5),
+            ),
+            child: Text(opt,
+                style: AppTextStyles.caption.copyWith(
+                    color: sel ? AppColors.gold : AppColors.textSecondary,
+                    fontWeight: sel ? FontWeight.w600 : FontWeight.normal)),
+          ),
+        );
+      }).toList(),
     );
   }
 }

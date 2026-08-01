@@ -51,6 +51,15 @@ class MatchesTab extends GetView<HomeController> {
               SizedBox(
                 height: 110,
                 child: Obx(() {
+                  if (controller.isLoadingMatches.value) {
+                    return const Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    );
+                  }
                   if (controller.matches.isEmpty) {
                     return Center(
                       child: Text(

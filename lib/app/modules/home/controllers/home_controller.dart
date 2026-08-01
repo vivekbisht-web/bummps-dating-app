@@ -1,4 +1,5 @@
-import 'dart:math';
+import 'dart:math' show sqrt, min;
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -100,8 +101,20 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   // Active User Feed API Integration
   final RxBool isLoadingFeed = false.obs;
 
-  // Matches list
+  // Active filter state
+  final RxBool isFilterActive = false.obs;
+  String? activeAgeGroup;
+  int? activeMaxDistance;
+  List<String> activeInterests  = [];
+  List<String> activeLifestyle  = [];
+  List<String> activeLanguages  = [];
+  int? activeMinHeight;
+  int? activeMaxHeight;
+  bool? activeIsVerified;
+
+  // Matches list & loading state
   final RxList<ProfileCardData> matches = <ProfileCardData>[].obs;
+  final RxBool isLoadingMatches = false.obs;
   final List<ProfileCardData> likesYouList = [];
 
   // Messages list
@@ -137,7 +150,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     fetchUserProfile();
     _loadInitialProfiles();
     _loadLikesYouList();
-    _loadInitialMatches();
+    _loadMatchesFromApi();
     _loadInitialChats();
   }
 
@@ -147,40 +160,108 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
       profiles.clear();
       final authRepo = Get.find<AuthRepository>();
       final feedList = await authRepo.getFeed();
-      final mapped = feedList.map((up) {
-        String picUrl = up.profilePic;
-        if (picUrl.isEmpty) {
-          picUrl = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80';
-        } else if (!picUrl.startsWith('http') && !picUrl.startsWith('assets/')) {
-          picUrl = picUrl.startsWith('/')
-              ? 'https://datingapp-oz22.onrender.com$picUrl'
-              : 'https://datingapp-oz22.onrender.com/$picUrl';
-        }
-
-        return ProfileCardData(
-          id: up.id,
-          name: up.name,
-          age: up.age,
-          job: up.jobTitle.isNotEmpty ? up.jobTitle : 'Software Engineer',
-          distance: '${up.distancePreference} miles away',
-          bio: up.bio.isNotEmpty ? up.bio : 'Hello! I\'m looking for real connections.',
-          matchScore: '95',
-          imageUrl: picUrl,
-          isVerified: up.isVerified,
-          location: up.livingIn.isNotEmpty ? up.livingIn : 'New Delhi',
-          height: up.height.isNotEmpty ? '${up.height} cm' : '165 cm',
-          education: up.school.isNotEmpty ? up.school : 'Delhi University',
-          languages: up.languages.isNotEmpty ? up.languages.join(', ') : 'EN',
-          interests: up.interests,
-          lifestyle: up.lifestyle.isNotEmpty ? up.lifestyle : const ['Non-smoker', 'Social Drinker', 'Dog Lover'],
-        );
-      }).toList();
-      profiles.addAll(mapped);
+      profiles.addAll(feedList.map(_mapToCard));
     } catch (e) {
       debugPrint('[HomeController] Error loading discovery feed: $e');
     } finally {
       isLoadingFeed.value = false;
     }
+  }
+
+  /// Applies the given filter params, calls POST /api/matches/filter,
+  /// and replaces the profile deck with the results.
+  Future<void> applyFilter({
+    String? ageGroup,
+    int? maxDistance,
+    List<String> interests  = const [],
+    List<String> lifestyle  = const [],
+    List<String> languages  = const [],
+    int? minHeight,
+    int? maxHeight,
+    bool? isVerified,
+  }) async {
+    try {
+      isLoadingFeed.value = true;
+      profiles.clear();
+
+      // Store active filters
+      activeAgeGroup    = ageGroup;
+      activeMaxDistance = maxDistance;
+      activeInterests   = interests;
+      activeLifestyle   = lifestyle;
+      activeLanguages   = languages;
+      activeMinHeight   = minHeight;
+      activeMaxHeight   = maxHeight;
+      activeIsVerified  = isVerified;
+      isFilterActive.value = true;
+
+      final authRepo = Get.find<AuthRepository>();
+      final filtered = await authRepo.filterFeed(
+        ageGroup:     ageGroup,
+        maxDistance:  maxDistance,
+        interests:    interests.isNotEmpty   ? interests  : null,
+        lifestyle:    lifestyle.isNotEmpty   ? lifestyle  : null,
+        languages:    languages.isNotEmpty   ? languages  : null,
+        minHeight:    minHeight,
+        maxHeight:    maxHeight,
+        isVerified:   isVerified,
+      );
+      profiles.addAll(filtered.map(_mapToCard));
+    } catch (e) {
+      debugPrint('[HomeController] Error applying filter: $e');
+      Get.snackbar(
+        'Filter Error',
+        'Could not apply filters. Please try again.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.surface,
+        colorText: AppColors.textPrimary,
+      );
+    } finally {
+      isLoadingFeed.value = false;
+    }
+  }
+
+  /// Clears all active filters and reloads the default discovery feed.
+  Future<void> clearFilter() async {
+    activeAgeGroup    = null;
+    activeMaxDistance = null;
+    activeInterests   = [];
+    activeLifestyle   = [];
+    activeLanguages   = [];
+    activeMinHeight   = null;
+    activeMaxHeight   = null;
+    activeIsVerified  = null;
+    isFilterActive.value = false;
+    await _loadInitialProfiles();
+  }
+
+  /// Maps a [UserProfile] from the API into a [ProfileCardData] for the card deck.
+  ProfileCardData _mapToCard(UserProfile up) {
+    String picUrl = up.profilePic;
+    if (picUrl.isEmpty) {
+      picUrl = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80';
+    } else if (!picUrl.startsWith('http') && !picUrl.startsWith('assets/')) {
+      picUrl = picUrl.startsWith('/')
+          ? 'https://datingapp-oz22.onrender.com$picUrl'
+          : 'https://datingapp-oz22.onrender.com/$picUrl';
+    }
+    return ProfileCardData(
+      id: up.id,
+      name: up.name,
+      age: up.age,
+      job: up.jobTitle.isNotEmpty ? up.jobTitle : 'Professional',
+      distance: up.distancePreference > 0 ? '${up.distancePreference} miles away' : 'Nearby',
+      bio: up.bio.isNotEmpty ? up.bio : 'Hello! I\'m looking for real connections.',
+      matchScore: '95',
+      imageUrl: picUrl,
+      isVerified: up.isVerified,
+      location: up.livingIn.isNotEmpty ? up.livingIn : 'New Delhi',
+      height: up.height.isNotEmpty ? '${up.height} cm' : '',
+      education: up.school.isNotEmpty ? up.school : '',
+      languages: up.languages.isNotEmpty ? up.languages.join(', ') : 'EN',
+      interests: up.interests,
+      lifestyle: up.lifestyle,
+    );
   }
 
   void _loadLikesYouList() {
@@ -220,89 +301,47 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     ]);
   }
 
-  void _loadInitialMatches() {
-    matches.addAll([
-      ProfileCardData(
-        name: 'Elena',
-        age: 28,
-        job: 'Art Curator',
-        distance: '5 miles away',
-        bio: 'Seeking a connection...',
-        id: 'SS_0192',
-        matchScore: '95',
-        imageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80',
-        location: 'Paris, France',
-        height: '175 cm',
-        education: 'Sorbonne',
-        languages: 'FR, EN, IT',
-        interests: ['Photography', 'Travel'],
-        lifestyle: ['Cat Lover'],
-      ),
-      ProfileCardData(
-        name: 'Marcus',
-        age: 32,
-        job: 'Fine Art Curator',
-        distance: '3 miles away',
-        bio: 'Passionate about aesthetic storytelling...',
-        id: 'SS_0571',
-        matchScore: '89',
-        imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-        location: 'London, UK',
-        height: '182 cm',
-        education: 'Courtauld Institute',
-        languages: 'EN, FR',
-        interests: ['Photography', 'Architecture'],
-        lifestyle: ['Dog Lover'],
-      ),
-      ProfileCardData(
-        name: 'Sophia',
-        age: 29,
-        job: 'Boutique Architect',
-        distance: '4 miles away',
-        bio: 'Designing space...',
-        id: 'SS_0442',
-        matchScore: '92',
-        imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-        location: 'Milan, Italy',
-        height: '168 cm',
-        education: 'Politecnico',
-        languages: 'IT, EN',
-        interests: ['Architecture', 'Travel'],
-        lifestyle: ['Cat Lover'],
-      ),
-      ProfileCardData(
-        name: 'Julian',
-        age: 31,
-        job: 'Venture Capitalist',
-        distance: '2 miles away',
-        bio: 'Seeking intellectual depth...',
-        id: 'SS_0835',
-        matchScore: '98',
-        imageUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80',
-        location: 'New York, USA',
-        height: '170 cm',
-        education: 'Wharton School',
-        languages: 'EN, FR',
-        interests: ['Photography', 'Travel'],
-        lifestyle: ['Non-smoker'],
-      ),
-      ProfileCardData(
-        name: 'Kai',
-        age: 27,
-        job: 'Creative Director',
-        distance: '1 mile away',
-        bio: 'Exploring expressions...',
-        id: 'SS_0990',
-        matchScore: '93',
-        imageUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&auto=format&fit=crop&q=80',
-        location: 'Berlin, Germany',
-        height: '178 cm',
-        education: 'UdK Berlin',
-        languages: 'DE, EN',
-        interests: ['Photography', 'Travel'],
-        lifestyle: ['Non-smoker'],
-      ),
-    ]);
+  /// Fetch real matches from the API and populate the matches list.
+  Future<void> _loadMatchesFromApi() async {
+    try {
+      isLoadingMatches.value = true;
+      matches.clear();
+      final authRepo = Get.find<AuthRepository>();
+      final matchList = await authRepo.getMatches();
+      final mapped = matchList.map((up) {
+        String picUrl = up.profilePic;
+        if (picUrl.isEmpty) {
+          picUrl = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80';
+        } else if (!picUrl.startsWith('http') && !picUrl.startsWith('assets/')) {
+          picUrl = picUrl.startsWith('/')
+              ? 'https://datingapp-oz22.onrender.com$picUrl'
+              : 'https://datingapp-oz22.onrender.com/$picUrl';
+        }
+        return ProfileCardData(
+          id: up.id,
+          name: up.name,
+          age: up.age,
+          job: up.jobTitle.isNotEmpty ? up.jobTitle : 'Professional',
+          distance: up.distancePreference > 0 ? '${up.distancePreference} miles away' : 'Nearby',
+          bio: up.bio.isNotEmpty ? up.bio : 'Hello! Looking for a real connection.',
+          matchScore: '95',
+          imageUrl: picUrl,
+          isVerified: up.isVerified,
+          location: up.livingIn.isNotEmpty ? up.livingIn : 'Unknown',
+          height: up.height.isNotEmpty ? '${up.height} cm' : '',
+          education: up.school.isNotEmpty ? up.school : '',
+          languages: up.languages.isNotEmpty ? up.languages.join(', ') : 'EN',
+          interests: up.interests,
+          lifestyle: up.lifestyle,
+        );
+      }).toList();
+      matches.addAll(mapped);
+    } catch (e) {
+      debugPrint('[HomeController] Error loading matches from API: $e');
+      // No dummy fallback — the UI already shows "No matches yet" when empty
+    } finally {
+      isLoadingMatches.value = false;
+    }
   }
 
   void _loadInitialChats() {
@@ -420,13 +459,39 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     swipeOverlayOpacity.value = 0;
     swipeDirection.value = '';
 
-    // Action reactions
+    // Call the real API and check for a mutual match
     if (action == 'like' || action == 'super') {
-      // Simulate random matching for a premium feel
-      // We will trigger a match dialog for Julien (1st profile) or Elena (2nd profile) or randomly 40% of the time.
-      if (profile.name == 'Julien' || profile.name == 'Elena' || Random().nextDouble() < 0.40) {
+      _handleLikeAction(profile);
+    } else if (action == 'nope') {
+      _handlePassAction(profile);
+    }
+  }
+
+  /// Sends the like to the backend. If it returns isMatch=true, show match dialog.
+  void _handleLikeAction(ProfileCardData profile) async {
+    try {
+      final authRepo = Get.find<AuthRepository>();
+      final result = await authRepo.likeUser(profile.id);
+      final bool isMatch = result['isMatch'] == true ||
+          result['match'] == true ||
+          result['matched'] == true;
+      if (isMatch) {
         _triggerMatchDialog(profile);
       }
+    } catch (e) {
+      debugPrint('[HomeController] Like API error for ${profile.id}: $e');
+      // Silently fail — do not crash the swipe experience
+    }
+  }
+
+  /// Sends pass (X) to the backend — POST /api/matches/pass
+  void _handlePassAction(ProfileCardData profile) async {
+    try {
+      final authRepo = Get.find<AuthRepository>();
+      await authRepo.passUser(profile.id);
+    } catch (e) {
+      debugPrint('[HomeController] Pass API error for ${profile.id}: $e');
+      // Silently fail — do not crash the swipe experience
     }
   }
 
@@ -448,6 +513,20 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
     final ProfileCardData restoredProfile = swipeHistory.removeLast();
     profiles.insert(0, restoredProfile);
+
+    // Notify the backend — POST /api/matches/rewind { "targetUserId": id }
+    _handleRewindAction(restoredProfile);
+  }
+
+  /// Sends rewind to the backend — POST /api/matches/rewind
+  void _handleRewindAction(ProfileCardData profile) async {
+    try {
+      final authRepo = Get.find<AuthRepository>();
+      await authRepo.rewindSwipe(profile.id);
+    } catch (e) {
+      debugPrint('[HomeController] Rewind API error for ${profile.id}: $e');
+      // Silently fail — card is already restored locally
+    }
   }
 
   void triggerBoost() {
