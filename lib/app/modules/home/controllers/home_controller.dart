@@ -7,6 +7,7 @@ import '../../../routes/app_pages.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/services/storage/secure_storage_service.dart';
+import '../../../core/services/socket/socket_service.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/models/user_profile.dart';
 
@@ -152,6 +153,45 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     _loadLikesYouList();
     _loadMatchesFromApi();
     _loadInitialChats();
+    _initSocketService();
+  }
+
+  void _initSocketService() async {
+    try {
+      final socketService = Get.find<SocketService>();
+      await socketService.init();
+
+      // Listen for socket events
+      // 4. receiveMessage
+      ever(socketService.latestIncomingMessage, (data) {
+        if (data != null) {
+          _handleIncomingSocketMessage(data);
+        }
+      });
+
+      // 7. userStatusChanged
+      ever(socketService.latestUserStatus, (data) {
+        if (data != null) {
+          _handleSocketUserStatusChanged(data);
+        }
+      });
+
+      // 2. getChats from socket
+      socketService.getChats((chatsList) {
+        if (chatsList.isNotEmpty) {
+          _populateChatsFromSocket(chatsList);
+        }
+      });
+
+      // 5. getNewMatches from socket
+      socketService.getNewMatches((matchesList) {
+        if (matchesList.isNotEmpty) {
+          _populateMatchesFromSocket(matchesList);
+        }
+      });
+    } catch (e) {
+      debugPrint('[HomeController] Error initializing SocketService: $e');
+    }
   }
 
   Future<void> _loadInitialProfiles() async {
@@ -501,13 +541,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
   void undoSwipe() {
     if (swipeHistory.isEmpty) {
-      Get.snackbar(
-        'Bummps Rewind',
-        'No swiping history to rewind.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColors.surface,
-        colorText: AppColors.textPrimary,
-      );
+      // History is empty — ignore quietly to prevent continuous snackbars
       return;
     }
 
@@ -722,9 +756,49 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     );
   }
 
-  // --- Messaging Chat Detail View ---
+  // --- Messaging Chat Detail View & Socket Handling ---
 
   void openChatDetail(ChatThread chat) {
+    // Fetch latest messages & status for chat via Socket.IO
+    try {
+      final socketService = Get.find<SocketService>();
+      // 3. getMessages
+      socketService.getMessages(
+        chatId: chat.id,
+        callback: (msgList) {
+          if (msgList.isNotEmpty) {
+            final List<Map<String, dynamic>> parsedMessages = [];
+            for (var m in msgList) {
+              if (m is Map) {
+                final String text = m['message']?.toString() ?? m['text']?.toString() ?? '';
+                final String senderId = m['senderId']?.toString() ?? m['sender']?['_id']?.toString() ?? m['sender']?.toString() ?? '';
+                final bool isMe = senderId == currentUserProfile.value?.id || m['sender'] == 'me';
+                parsedMessages.add({
+                  'text': text,
+                  'sender': isMe ? 'me' : 'them',
+                  'time': m['time']?.toString() ?? _formatCurrentTime(),
+                  'date': m['date']?.toString() ?? 'TODAY',
+                });
+              }
+            }
+            if (parsedMessages.isNotEmpty) {
+              chat.messages.assignAll(parsedMessages);
+            }
+          }
+        },
+      );
+
+      // 6. getUserStatus
+      socketService.getUserStatus(
+        targetUserId: chat.id,
+        callback: (isOnline, lastSeen) {
+          chat.isOnline.value = isOnline;
+        },
+      );
+    } catch (e) {
+      debugPrint('[HomeController] Error calling socket getMessages/getUserStatus: $e');
+    }
+
     Get.toNamed(Routes.chatDetail, arguments: chat);
   }
 
@@ -783,7 +857,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
     chatInputController.clear();
     
-    // Add my message
+    // Add my message locally
     final String time = _formatCurrentTime();
     chat.messages.add({
       'text': text, 
@@ -795,8 +869,140 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     chat.time.value = time;
     chat.isTyping.value = false;
 
-    // Simulate automatic reply after 1.5 seconds for a premium interactive feel
-    _simulateReply(chat, text);
+    // 1. Send message via Socket.IO ("sendMessage")
+    try {
+      final socketService = Get.find<SocketService>();
+      socketService.sendMessage(
+        receiverId: chat.id,
+        message: text,
+        onAck: (response) {
+          debugPrint('[HomeController] sendMessage socket ack: $response');
+        },
+      );
+    } catch (e) {
+      debugPrint('[HomeController] Error sending socket message: $e');
+    }
+
+    // Demo fallback for Elena
+    if (chat.name.contains('Elena')) {
+      _simulateReply(chat, text);
+    }
+  }
+
+  void _handleIncomingSocketMessage(Map<String, dynamic> data) {
+    final String senderId = data['senderId']?.toString() ??
+        data['sender']?['_id']?.toString() ??
+        data['sender']?.toString() ??
+        '';
+    final String text = data['message']?.toString() ?? data['text']?.toString() ?? '';
+    final String time = _formatCurrentTime();
+
+    if (text.isEmpty) return;
+
+    ChatThread? chat = chatThreads.firstWhereOrNull((c) => c.id == senderId || c.name.contains(senderId));
+    if (chat != null) {
+      chat.messages.add({
+        'text': text,
+        'sender': 'them',
+        'time': time,
+        'date': 'TODAY',
+      });
+      chat.lastMessage.value = text;
+      chat.time.value = time;
+      chat.isUnread.value = true;
+    } else {
+      final String name = data['senderName']?.toString() ?? data['sender']?['name']?.toString() ?? 'New Message';
+      final String photo = data['senderPhoto']?.toString() ?? data['sender']?['profilePic']?.toString() ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80';
+      final newChat = ChatThread(
+        id: senderId.isNotEmpty ? senderId : DateTime.now().millisecondsSinceEpoch.toString(),
+        name: name,
+        imageUrl: photo.startsWith('http') ? photo : 'https://datingapp-oz22.onrender.com/$photo',
+        initialMessage: text,
+        initialTime: time,
+        unread: true,
+        online: true,
+      );
+      chatThreads.insert(0, newChat);
+    }
+  }
+
+  void _handleSocketUserStatusChanged(Map<String, dynamic> data) {
+    final String targetUserId = data['userId']?.toString() ?? data['targetUserId']?.toString() ?? '';
+    final bool isOnline = data['isOnline'] == true;
+    if (targetUserId.isNotEmpty) {
+      final chat = chatThreads.firstWhereOrNull((c) => c.id == targetUserId);
+      if (chat != null) {
+        chat.isOnline.value = isOnline;
+      }
+    }
+  }
+
+  void _populateChatsFromSocket(List<dynamic> chatsList) {
+    for (var item in chatsList) {
+      if (item is Map) {
+        final Map<String, dynamic> map = Map<String, dynamic>.from(item);
+        final String chatId = map['_id']?.toString() ?? map['chatId']?.toString() ?? map['id']?.toString() ?? '';
+        final userObj = map['user'] ?? map['participant'] ?? map['receiver'] ?? {};
+        final String name = userObj['name']?.toString() ?? map['name']?.toString() ?? 'Connection';
+        final String photo = userObj['profilePic']?.toString() ?? map['imageUrl']?.toString() ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80';
+        final lastMsgObj = map['lastMessage'];
+        final String lastMsgText = lastMsgObj is Map ? (lastMsgObj['message'] ?? lastMsgObj['text'] ?? '') : (lastMsgObj?.toString() ?? 'No messages yet');
+        final bool isOnline = userObj['isOnline'] == true || map['isOnline'] == true;
+
+        final existing = chatThreads.firstWhereOrNull((c) => c.id == chatId || c.id == userObj['_id']?.toString());
+        if (existing != null) {
+          existing.lastMessage.value = lastMsgText;
+          existing.isOnline.value = isOnline;
+        } else {
+          final newChat = ChatThread(
+            id: chatId.isNotEmpty ? chatId : (userObj['_id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString()),
+            name: name,
+            imageUrl: photo.startsWith('http') ? photo : 'https://datingapp-oz22.onrender.com/$photo',
+            initialMessage: lastMsgText,
+            initialTime: 'Recent',
+            online: isOnline,
+          );
+          chatThreads.add(newChat);
+        }
+      }
+    }
+  }
+
+  void _populateMatchesFromSocket(List<dynamic> matchesList) {
+    for (var item in matchesList) {
+      if (item is Map) {
+        final Map<String, dynamic> map = Map<String, dynamic>.from(item);
+        final String id = map['_id']?.toString() ?? map['id']?.toString() ?? '';
+        final String name = map['name']?.toString() ?? 'Match';
+        final int age = map['age'] is int ? map['age'] : (int.tryParse(map['age']?.toString() ?? '25') ?? 25);
+        String picUrl = map['profilePic']?.toString() ?? '';
+        if (picUrl.isEmpty) {
+          picUrl = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80';
+        } else if (!picUrl.startsWith('http') && !picUrl.startsWith('assets/')) {
+          picUrl = 'https://datingapp-oz22.onrender.com/$picUrl';
+        }
+
+        final existing = matches.firstWhereOrNull((m) => m.id == id);
+        if (existing == null && id.isNotEmpty) {
+          matches.add(ProfileCardData(
+            id: id,
+            name: name,
+            age: age,
+            job: map['jobTitle']?.toString() ?? 'Professional',
+            distance: 'Nearby',
+            bio: map['bio']?.toString() ?? '',
+            matchScore: '95',
+            imageUrl: picUrl,
+            location: map['livingIn']?.toString() ?? '',
+            height: map['height']?.toString() ?? '',
+            education: map['school']?.toString() ?? '',
+            languages: 'EN',
+            interests: [],
+            lifestyle: [],
+          ));
+        }
+      }
+    }
   }
 
   String _formatCurrentTime() {

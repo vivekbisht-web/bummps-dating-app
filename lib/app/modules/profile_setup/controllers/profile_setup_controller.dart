@@ -104,14 +104,29 @@ class ProfileSetupController extends GetxController {
       currentStep.value == implementedSteps - 1;
 
   int get age {
-    if (dob.value == null) return 29;
-    final now = DateTime.now();
-    int age = now.year - dob.value!.year;
-    if (now.month < dob.value!.month ||
-        (now.month == dob.value!.month && now.day < dob.value!.day)) {
-      age--;
+    DateTime? birthDate = dob.value;
+    if (birthDate == null && dobController.text.isNotEmpty) {
+      try {
+        final parts = dobController.text.split('/');
+        if (parts.length == 3) {
+          final month = int.parse(parts[0]);
+          final day = int.parse(parts[1]);
+          final year = int.parse(parts[2]);
+          birthDate = DateTime(year, month, day);
+        }
+      } catch (_) {}
     }
-    return age;
+
+    if (birthDate == null) return 25;
+
+    final now = DateTime.now();
+    int calculated = now.year - birthDate.year;
+    if (now.month < birthDate.month ||
+        (now.month == birthDate.month && now.day < birthDate.day)) {
+      calculated--;
+    }
+    // Server validation requires age >= 18
+    return calculated < 18 ? 18 : calculated;
   }
 
   @override
@@ -178,11 +193,12 @@ class ProfileSetupController extends GetxController {
     final context = Get.context;
     if (context == null) return;
     final now = DateTime.now();
+    final maxDobFor18 = DateTime(now.year - 18, now.month, now.day);
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime(now.year - 18, now.month, now.day),
+      initialDate: dob.value != null && dob.value!.isBefore(maxDobFor18) ? dob.value! : maxDobFor18,
       firstDate: DateTime(1900),
-      lastDate: now,
+      lastDate: maxDobFor18,
     );
     if (picked != null) {
       dob.value = picked;

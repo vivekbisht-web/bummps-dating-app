@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 
 import '../../../core/services/network/dio_client.dart';
 import '../../../core/services/storage/secure_storage_service.dart';
+import '../../../core/services/socket/socket_service.dart';
 import '../../../data/providers/auth_provider.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../controllers/home_controller.dart';
@@ -21,6 +22,7 @@ class HomeBinding extends Bindings {
       fenix: true,
     );
 
+    Get.lazyPut<SocketService>(() => SocketService(), fenix: true);
     Get.lazyPut<HomeController>(() => HomeController());
   }
 }
