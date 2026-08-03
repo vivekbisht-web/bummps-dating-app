@@ -158,13 +158,16 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
   void _initSocketService() async {
     try {
+      debugPrint('[HomeController] [Socket] Initializing SocketService...');
       final socketService = Get.find<SocketService>();
       await socketService.init();
+      debugPrint('[HomeController] [Socket] SocketService init complete. Registering listeners...');
 
       // Listen for socket events
       // 4. receiveMessage
       ever(socketService.latestIncomingMessage, (data) {
         if (data != null) {
+          debugPrint('[HomeController] [Socket] Reaction fired: latestIncomingMessage = $data');
           _handleIncomingSocketMessage(data);
         }
       });
@@ -172,12 +175,14 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
       // 7. userStatusChanged
       ever(socketService.latestUserStatus, (data) {
         if (data != null) {
+          debugPrint('[HomeController] [Socket] Reaction fired: latestUserStatus = $data');
           _handleSocketUserStatusChanged(data);
         }
       });
 
       // 2. getChats from socket
       socketService.getChats((chatsList) {
+        debugPrint('[HomeController] [Socket] getChats callback received with ${chatsList.length} items');
         if (chatsList.isNotEmpty) {
           _populateChatsFromSocket(chatsList);
         }
@@ -185,6 +190,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
       // 5. getNewMatches from socket
       socketService.getNewMatches((matchesList) {
+        debugPrint('[HomeController] [Socket] getNewMatches callback received with ${matchesList.length} items');
         if (matchesList.isNotEmpty) {
           _populateMatchesFromSocket(matchesList);
         }
@@ -759,13 +765,16 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   // --- Messaging Chat Detail View & Socket Handling ---
 
   void openChatDetail(ChatThread chat) {
+    debugPrint('[HomeController] [Socket] openChatDetail() called - chatId: "${chat.id}", name: "${chat.name}"');
     // Fetch latest messages & status for chat via Socket.IO
     try {
       final socketService = Get.find<SocketService>();
       // 3. getMessages
+      debugPrint('[HomeController] [Socket] Requesting messages for chatId: "${chat.id}"');
       socketService.getMessages(
         chatId: chat.id,
         callback: (msgList) {
+          debugPrint('[HomeController] [Socket] getMessages callback for "${chat.id}" returned ${msgList.length} raw messages');
           if (msgList.isNotEmpty) {
             final List<Map<String, dynamic>> parsedMessages = [];
             for (var m in msgList) {
@@ -781,6 +790,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
                 });
               }
             }
+            debugPrint('[HomeController] [Socket] Parsed ${parsedMessages.length} messages for chat thread.');
             if (parsedMessages.isNotEmpty) {
               chat.messages.assignAll(parsedMessages);
             }
@@ -789,9 +799,11 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
       );
 
       // 6. getUserStatus
+      debugPrint('[HomeController] [Socket] Requesting user status for targetUserId (chatId): "${chat.id}"');
       socketService.getUserStatus(
         targetUserId: chat.id,
         callback: (isOnline, lastSeen) {
+          debugPrint('[HomeController] [Socket] getUserStatus callback for "${chat.id}": isOnline = $isOnline, lastSeen = $lastSeen');
           chat.isOnline.value = isOnline;
         },
       );
@@ -857,6 +869,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
     chatInputController.clear();
     
+    debugPrint('[HomeController] [Socket] sendMessage() locally inserting message: "$text" for chat: "${chat.name}"');
     // Add my message locally
     final String time = _formatCurrentTime();
     chat.messages.add({
@@ -872,11 +885,12 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     // 1. Send message via Socket.IO ("sendMessage")
     try {
       final socketService = Get.find<SocketService>();
+      debugPrint('[HomeController] [Socket] Dispatching sendMessage to SocketService receiverId: "${chat.id}"');
       socketService.sendMessage(
         receiverId: chat.id,
         message: text,
         onAck: (response) {
-          debugPrint('[HomeController] sendMessage socket ack: $response');
+          debugPrint('[HomeController] [Socket] sendMessage socket ack callback received: $response');
         },
       );
     } catch (e) {
@@ -890,6 +904,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   }
 
   void _handleIncomingSocketMessage(Map<String, dynamic> data) {
+    debugPrint('[HomeController] [Socket] _handleIncomingSocketMessage() - Raw payload: $data');
     final String senderId = data['senderId']?.toString() ??
         data['sender']?['_id']?.toString() ??
         data['sender']?.toString() ??
@@ -897,10 +912,14 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     final String text = data['message']?.toString() ?? data['text']?.toString() ?? '';
     final String time = _formatCurrentTime();
 
-    if (text.isEmpty) return;
+    if (text.isEmpty) {
+      debugPrint('[HomeController] [Socket] Warning: Received empty message text. Skipping.');
+      return;
+    }
 
     ChatThread? chat = chatThreads.firstWhereOrNull((c) => c.id == senderId || c.name.contains(senderId));
     if (chat != null) {
+      debugPrint('[HomeController] [Socket] Appending incoming message to existing chat thread (id: "${chat.id}", name: "${chat.name}")');
       chat.messages.add({
         'text': text,
         'sender': 'them',
@@ -913,6 +932,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     } else {
       final String name = data['senderName']?.toString() ?? data['sender']?['name']?.toString() ?? 'New Message';
       final String photo = data['senderPhoto']?.toString() ?? data['sender']?['profilePic']?.toString() ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80';
+      debugPrint('[HomeController] [Socket] Chat thread not found for senderId: "$senderId". Creating new ChatThread (name: "$name")');
       final newChat = ChatThread(
         id: senderId.isNotEmpty ? senderId : DateTime.now().millisecondsSinceEpoch.toString(),
         name: name,
@@ -927,17 +947,24 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   }
 
   void _handleSocketUserStatusChanged(Map<String, dynamic> data) {
+    debugPrint('[HomeController] [Socket] _handleSocketUserStatusChanged() - Raw payload: $data');
     final String targetUserId = data['userId']?.toString() ?? data['targetUserId']?.toString() ?? '';
     final bool isOnline = data['isOnline'] == true;
     if (targetUserId.isNotEmpty) {
       final chat = chatThreads.firstWhereOrNull((c) => c.id == targetUserId);
       if (chat != null) {
+        debugPrint('[HomeController] [Socket] Updating online status for chat (id: "${chat.id}", name: "${chat.name}") -> isOnline: $isOnline');
         chat.isOnline.value = isOnline;
+      } else {
+        debugPrint('[HomeController] [Socket] No matching chat thread found for targetUserId: "$targetUserId" to update status');
       }
+    } else {
+      debugPrint('[HomeController] [Socket] Warning: targetUserId is empty in userStatusChanged payload');
     }
   }
 
   void _populateChatsFromSocket(List<dynamic> chatsList) {
+    debugPrint('[HomeController] [Socket] _populateChatsFromSocket() called with ${chatsList.length} items');
     for (var item in chatsList) {
       if (item is Map) {
         final Map<String, dynamic> map = Map<String, dynamic>.from(item);
@@ -951,11 +978,14 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
         final existing = chatThreads.firstWhereOrNull((c) => c.id == chatId || c.id == userObj['_id']?.toString());
         if (existing != null) {
+          debugPrint('[HomeController] [Socket] Chat thread already exists (id: "${existing.id}", name: "${existing.name}"). Updating last message and status.');
           existing.lastMessage.value = lastMsgText;
           existing.isOnline.value = isOnline;
         } else {
+          final targetId = chatId.isNotEmpty ? chatId : (userObj['_id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString());
+          debugPrint('[HomeController] [Socket] Creating new chat thread from populate (id: "$targetId", name: "$name")');
           final newChat = ChatThread(
-            id: chatId.isNotEmpty ? chatId : (userObj['_id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString()),
+            id: targetId,
             name: name,
             imageUrl: photo.startsWith('http') ? photo : 'https://datingapp-oz22.onrender.com/$photo',
             initialMessage: lastMsgText,
@@ -969,6 +999,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   }
 
   void _populateMatchesFromSocket(List<dynamic> matchesList) {
+    debugPrint('[HomeController] [Socket] _populateMatchesFromSocket() called with ${matchesList.length} items');
     for (var item in matchesList) {
       if (item is Map) {
         final Map<String, dynamic> map = Map<String, dynamic>.from(item);
@@ -984,6 +1015,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
         final existing = matches.firstWhereOrNull((m) => m.id == id);
         if (existing == null && id.isNotEmpty) {
+          debugPrint('[HomeController] [Socket] Adding new match from populate (id: "$id", name: "$name")');
           matches.add(ProfileCardData(
             id: id,
             name: name,
@@ -1000,6 +1032,8 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
             interests: [],
             lifestyle: [],
           ));
+        } else {
+          debugPrint('[HomeController] [Socket] Match already exists or id is empty (id: "$id", name: "$name"). Skipping.');
         }
       }
     }

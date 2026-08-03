@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../constants/app_constants.dart';
 import '../storage/secure_storage_service.dart';
+import '../../utils/pretty_logger.dart';
 import 'auth_interceptor.dart';
 import 'dio_exception.dart';
 
@@ -28,17 +29,7 @@ class DioClient {
 
     // Logging interceptor for debugging in development mode
     if (kDebugMode) {
-      _dio.interceptors.add(
-        LogInterceptor(
-          request: true,
-          requestHeader: true,
-          requestBody: true,
-          responseHeader: false,
-          responseBody: true,
-          error: true,
-          logPrint: (object) => debugPrint('[API] $object'),
-        ),
-      );
+      _dio.interceptors.add(PrettyDioInterceptor());
     }
   }
 
