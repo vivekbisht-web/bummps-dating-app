@@ -359,20 +359,7 @@ class _ProfileCard extends StatelessWidget {
                       fontSize: 12.5,
                     ),
                   ),
-                  const SizedBox(height: 16),
 
-                  // ID label
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      'ID: ${profile.id}',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.gold,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
