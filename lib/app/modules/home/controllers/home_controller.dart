@@ -53,7 +53,8 @@ class ProfileCardData {
 
 /// Representation of a chat thread.
 class ChatThread {
-  final String id;
+  final String id; // This is the user/receiver ID
+  final RxnString roomId; // This is the chat room ID on the backend (nullable initially)
   final String name;
   final String imageUrl;
   final RxString lastMessage;
@@ -65,6 +66,7 @@ class ChatThread {
 
   ChatThread({
     required this.id,
+    String? initialRoomId,
     required this.name,
     required this.imageUrl,
     required String initialMessage,
@@ -72,7 +74,8 @@ class ChatThread {
     bool unread = false,
     bool online = false,
     bool typing = false,
-  })  : lastMessage = initialMessage.obs,
+  })  : roomId = RxnString(initialRoomId),
+        lastMessage = initialMessage.obs,
         time = initialTime.obs,
         isUnread = unread.obs,
         isOnline = online.obs,
@@ -610,34 +613,38 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   }
 
 
-  Future<void> _loadMessagesFromApi(ChatThread chat) async {
+  void _loadMessagesFromSocket(ChatThread chat) {
     try {
       isLoadingMessages.value = true;
-      final chatRepo = Get.find<ChatRepository>();
-      final List<dynamic> msgList = await chatRepo.getChatMessages(chat.id);
-      debugPrint('[HomeController] [REST] getChatMessages returned ${msgList.length} items for chat ${chat.id}');
+      final socketService = Get.find<SocketService>();
+      final String fetchId = chat.roomId.value ?? chat.id;
       
-      final List<Map<String, dynamic>> parsedMessages = [];
-      for (var m in msgList) {
-        if (m is Map) {
-          final String text = m['message']?.toString() ?? m['text']?.toString() ?? '';
-          final String senderId = m['senderId']?.toString() ?? m['sender']?['_id']?.toString() ?? m['sender']?.toString() ?? '';
-          final bool isMe = senderId == currentUserProfile.value?.id || m['sender'] == 'me';
-          parsedMessages.add({
-            'text': text,
-            'sender': isMe ? 'me' : 'them',
-            'time': m['time']?.toString() ?? _formatCurrentTime(),
-            'date': m['date']?.toString() ?? 'TODAY',
-          });
-        }
-      }
-      if (parsedMessages.isNotEmpty) {
-        chat.messages.assignAll(parsedMessages);
-      }
+      socketService.getMessages(
+        chatId: fetchId,
+        callback: (msgList) {
+          isLoadingMessages.value = false;
+          debugPrint('[HomeController] [Socket] getMessages returned ${msgList.length} items for chat ${chat.id} (roomId: ${chat.roomId.value})');
+          
+          final List<Map<String, dynamic>> parsedMessages = [];
+          for (var m in msgList) {
+            if (m is Map) {
+              final String text = m['message']?.toString() ?? m['text']?.toString() ?? '';
+              final String senderId = m['senderId']?.toString() ?? m['sender']?['_id']?.toString() ?? m['sender']?.toString() ?? '';
+              final bool isMe = senderId == currentUserProfile.value?.id || m['sender'] == 'me';
+              parsedMessages.add({
+                'text': text,
+                'sender': isMe ? 'me' : 'them',
+                'time': m['time']?.toString() ?? _formatCurrentTime(),
+                'date': m['date']?.toString() ?? 'TODAY',
+              });
+            }
+          }
+          chat.messages.assignAll(parsedMessages);
+        },
+      );
     } catch (e) {
-      debugPrint('[HomeController] Error loading messages from API: $e');
-    } finally {
       isLoadingMessages.value = false;
+      debugPrint('[HomeController] Error loading messages from Socket: $e');
     }
   }
 
@@ -976,8 +983,8 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   void openChatDetail(ChatThread chat) {
     debugPrint('[HomeController] openChatDetail() called - chatId: "${chat.id}", name: "${chat.name}"');
     
-    // Fetch latest messages via REST API
-    _loadMessagesFromApi(chat);
+    // Fetch latest messages via Socket
+    _loadMessagesFromSocket(chat);
 
     // Fetch user status via Socket.IO
     try {
@@ -1074,6 +1081,16 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
         message: text,
         onAck: (response) {
           debugPrint('[HomeController] [Socket] sendMessage response: $response');
+          if (response != null && response is Map && response['success'] == true) {
+            final dataObj = response['data'];
+            if (dataObj is Map && dataObj.containsKey('chat')) {
+              final String newRoomId = dataObj['chat']?.toString() ?? '';
+              if (newRoomId.isNotEmpty) {
+                chat.roomId.value = newRoomId;
+                debugPrint('[HomeController] [Socket] Resolved and stored roomId: "$newRoomId" for user: "${chat.name}"');
+              }
+            }
+          }
         },
       );
     } catch (e) {
@@ -1099,6 +1116,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
         data['sender']?['_id']?.toString() ??
         data['sender']?.toString() ??
         '';
+    final String chatId = data['chatId']?.toString() ?? data['chat']?.toString() ?? '';
     final String text = data['message']?.toString() ?? data['text']?.toString() ?? '';
     final String time = _formatCurrentTime();
 
@@ -1107,9 +1125,15 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
       return;
     }
 
-    ChatThread? chat = chatThreads.firstWhereOrNull((c) => c.id == senderId || c.name.contains(senderId));
+    ChatThread? chat = chatThreads.firstWhereOrNull(
+      (c) => c.id == senderId || (chatId.isNotEmpty && c.roomId.value == chatId)
+    );
+    
     if (chat != null) {
       debugPrint('[HomeController] [Socket] Appending incoming message to existing chat thread (id: "${chat.id}", name: "${chat.name}")');
+      if (chatId.isNotEmpty && chat.roomId.value == null) {
+        chat.roomId.value = chatId;
+      }
       chat.messages.add({
         'text': text,
         'sender': 'them',
@@ -1122,9 +1146,10 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     } else {
       final String name = data['senderName']?.toString() ?? data['sender']?['name']?.toString() ?? 'New Message';
       final String photo = data['senderPhoto']?.toString() ?? data['sender']?['profilePic']?.toString() ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80';
-      debugPrint('[HomeController] [Socket] Chat thread not found for senderId: "$senderId". Creating new ChatThread (name: "$name")');
+      debugPrint('[HomeController] [Socket] Chat thread not found for senderId: "$senderId". Creating new ChatThread (name: "$name", roomId: "$chatId")');
       final newChat = ChatThread(
         id: senderId.isNotEmpty ? senderId : DateTime.now().millisecondsSinceEpoch.toString(),
+        initialRoomId: chatId.isNotEmpty ? chatId : null,
         name: name,
         imageUrl: photo.startsWith('http') ? photo : 'https://datingapp-oz22.onrender.com/$photo',
         initialMessage: text,
@@ -1165,17 +1190,25 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
         final lastMsgObj = map['lastMessage'];
         final String lastMsgText = lastMsgObj is Map ? (lastMsgObj['message'] ?? lastMsgObj['text'] ?? '') : (lastMsgObj?.toString() ?? 'No messages yet');
         final bool isOnline = userObj['isOnline'] == true || map['isOnline'] == true;
+        final String userObjId = userObj['_id']?.toString() ?? '';
 
-        final existing = chatThreads.firstWhereOrNull((c) => c.id == chatId || c.id == userObj['_id']?.toString());
+        final existing = chatThreads.firstWhereOrNull(
+          (c) => (userObjId.isNotEmpty && c.id == userObjId) || (chatId.isNotEmpty && c.roomId.value == chatId)
+        );
+        
         if (existing != null) {
-          debugPrint('[HomeController] [Socket] Chat thread already exists (id: "${existing.id}", name: "${existing.name}"). Updating last message and status.');
+          debugPrint('[HomeController] [Socket] Chat thread already exists (id: "${existing.id}", name: "${existing.name}"). Updating last message, status, and roomId.');
+          if (chatId.isNotEmpty && existing.roomId.value == null) {
+            existing.roomId.value = chatId;
+          }
           existing.lastMessage.value = lastMsgText;
           existing.isOnline.value = isOnline;
         } else {
-          final targetId = chatId.isNotEmpty ? chatId : (userObj['_id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString());
-          debugPrint('[HomeController] [Socket] Creating new chat thread from populate (id: "$targetId", name: "$name")');
+          final String targetUserId = userObjId.isNotEmpty ? userObjId : (chatId.isNotEmpty ? chatId : DateTime.now().millisecondsSinceEpoch.toString());
+          debugPrint('[HomeController] [Socket] Creating new chat thread from populate (id: "$targetUserId", roomId: "$chatId", name: "$name")');
           final newChat = ChatThread(
-            id: targetId,
+            id: targetUserId,
+            initialRoomId: chatId.isNotEmpty ? chatId : null,
             name: name,
             imageUrl: photo.startsWith('http') ? photo : 'https://datingapp-oz22.onrender.com/$photo',
             initialMessage: lastMsgText,

@@ -254,6 +254,11 @@ class SocketService extends GetxService {
           title: 'Socket Ack ║ sendMessage response',
           data: response,
         );
+        if (response != null && response is Map && response['success'] == true) {
+          debugPrint("[Socket] Message sent successfully: ${response['data']}");
+        } else {
+          debugPrint("[Socket] Send message error: ${response != null && response is Map ? response['error'] : 'Unknown'}");
+        }
         if (onAck != null) onAck(response);
       },
     );
@@ -312,7 +317,7 @@ class SocketService extends GetxService {
   }) {
     PrettyLogger.printBox(
       tag: 'SOCKET',
-      title: 'Socket Emit ║ getMessages',
+      title: 'Socket Emit ║ getMessages & joinChat',
       lines: ['ChatId: $chatId'],
     );
 
@@ -330,26 +335,32 @@ class SocketService extends GetxService {
         title: 'Socket Emit Warning ║ getMessages',
         lines: ['WARNING: Socket client is not connected.'],
       );
-      callback([]);
-      return;
+      _socket?.connect();
     }
 
+    // Chat room join करें
+    _socket?.emit('joinChat', chatId);
+
+    // Messages fetch करने के लिए socket emit करें (Callback/Ack के साथ)
     _socket?.emitWithAck(
       'getMessages',
-      {'chatId': chatId},
+      {
+        'chatId': chatId,
+      },
       ack: (response) {
         PrettyLogger.printJson(
           tag: 'SOCKET',
           title: 'Socket Ack ║ getMessages response for chatId "$chatId"',
           data: response,
         );
-        List<dynamic> msgList = [];
-        if (response is Map && response.containsKey('messages')) {
-          msgList = response['messages'] ?? [];
-        } else if (response is List) {
-          msgList = response;
+        if (response != null && response is Map && response['success'] == true) {
+          final List<dynamic> msgList = response['messages'] ?? [];
+          debugPrint("[Socket] Fetched Messages: $msgList");
+          callback(msgList);
+        } else {
+          debugPrint("[Socket] Error fetching messages: ${response != null && response is Map ? response['error'] : 'Unknown'}");
+          callback([]);
         }
-        callback(msgList);
       },
     );
   }
