@@ -42,12 +42,13 @@ class SocketService extends GetxService {
       _socket = io.io(
         socketUrl,
         io.OptionBuilder()
-            .setTransports(['websocket', 'polling'])
+            .setTransports(['websocket'])
+            .setAuth({'token': token})
             .enableAutoConnect()
-            .setExtraHeaders({'Authorization': 'Bearer $token'})
-            .setAuth({'token': token, 'userId': userId})
             .build(),
       );
+
+      _socket?.connect();
 
       _socket?.onAny((event, data) {
         debugPrint("");

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math' show sqrt, min;
 
 import 'package:flutter/material.dart';
@@ -9,7 +10,9 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/services/storage/secure_storage_service.dart';
 import '../../../core/services/socket/socket_service.dart';
 import '../../../data/repositories/auth_repository.dart';
+import '../../../data/repositories/chat_repository.dart';
 import '../../../data/models/user_profile.dart';
+import '../../../data/models/subscription_plan.dart';
 
 /// Representation of a discover profile card.
 class ProfileCardData {
@@ -120,6 +123,23 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
   // Messages list
   final RxList<ChatThread> chatThreads = <ChatThread>[].obs;
+  final RxBool isLoadingChats = false.obs;
+  final RxBool isLoadingMessages = false.obs;
+
+  // Likes search list & loading state
+  final RxList<Map<String, dynamic>> likedProfilesList = <Map<String, dynamic>>[].obs;
+  final RxBool isLoadingLikesSearch = false.obs;
+
+  // Who Liked Me subscription state
+  final RxBool hasWhoLikedMeSubscription = true.obs;
+  final RxString selectedLikesFilter = 'all'.obs;
+  final RxString whoLikedMeErrorMessage = ''.obs;
+
+  // Subscription plans & active subscription observables
+  final RxList<SubscriptionPlan> subscriptionPlans = <SubscriptionPlan>[].obs;
+  final Rxn<UserSubscription> currentSubscription = Rxn<UserSubscription>();
+  final RxBool isLoadingPlans = false.obs;
+  final RxBool isSubmittingSubscription = false.obs;
 
   // Text controller for chat inputs
   final TextEditingController chatInputController = TextEditingController();
@@ -149,10 +169,12 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   void onInit() {
     super.onInit();
     fetchUserProfile();
+    fetchUserSubscription();
+    fetchSubscriptionPlans();
     _loadInitialProfiles();
     _loadLikesYouList();
     _loadMatchesFromApi();
-    _loadInitialChats();
+    loadWhoLikedMeProfiles();
     _initSocketService();
   }
 
@@ -181,7 +203,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
       });
 
       // 2. getChats from socket
+      isLoadingChats.value = true;
       socketService.getChats((chatsList) {
+        isLoadingChats.value = false;
         debugPrint('[HomeController] [Socket] getChats callback received with ${chatsList.length} items');
         if (chatsList.isNotEmpty) {
           _populateChatsFromSocket(chatsList);
@@ -347,6 +371,201 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     ]);
   }
 
+  Future<void> loadWhoLikedMeProfiles() async {
+    try {
+      isLoadingLikesSearch.value = true;
+      whoLikedMeErrorMessage.value = '';
+
+      final authRepo = Get.find<AuthRepository>();
+      final response = await authRepo.getWhoLikedMe(
+        filter: selectedLikesFilter.value,
+        page: 1,
+        limit: 20,
+      );
+
+      debugPrint('[HomeController] getWhoLikedMe response: $response');
+
+      if (response is Map<String, dynamic>) {
+        if (response['success'] == false || response['statusCode'] == 403) {
+          hasWhoLikedMeSubscription.value = false;
+          whoLikedMeErrorMessage.value = response['message']?.toString() ?? 'Active subscription required to see who liked you';
+          likedProfilesList.clear();
+          return;
+        }
+      }
+
+      // If we got here, subscription is active
+      hasWhoLikedMeSubscription.value = true;
+      final List<UserProfile> profiles = _parseUserProfileListResponse(response);
+      likedProfilesList.assignAll(profiles.map(_mapUserProfileToLikedProfile).toList());
+    } catch (e) {
+      debugPrint('[HomeController] Error loading who liked me profiles: $e');
+      final errStr = e.toString();
+      
+      if (errStr.contains('subscription') || errStr.contains('subscribed') || errStr.contains('403')) {
+        hasWhoLikedMeSubscription.value = false;
+        whoLikedMeErrorMessage.value = 'Active subscription required to see who liked you';
+        likedProfilesList.clear();
+      } else {
+        hasWhoLikedMeSubscription.value = true;
+        likedProfilesList.clear();
+      }
+    } finally {
+      isLoadingLikesSearch.value = false;
+    }
+  }
+
+  List<UserProfile> _parseUserProfileListResponse(dynamic json) {
+    List<dynamic>? rawList;
+
+    if (json is List) {
+      rawList = json;
+    } else if (json is Map<String, dynamic>) {
+      // Try common wrapper keys in order of likelihood
+      for (final key in ['users', 'profiles', 'feed', 'data', 'results']) {
+        if (json.containsKey(key) && json[key] is List) {
+          rawList = json[key] as List<dynamic>;
+          break;
+        }
+      }
+      // If still null, look for first list value in the map
+      if (rawList == null) {
+        for (final val in json.values) {
+          if (val is List) {
+            rawList = val;
+            break;
+          }
+        }
+      }
+    } else if (json is String) {
+      try {
+        final decoded = jsonDecode(json);
+        return _parseUserProfileListResponse(decoded);
+      } catch (_) {}
+    }
+
+    if (rawList == null || rawList.isEmpty) return [];
+
+    return rawList
+        .whereType<Map<String, dynamic>>()
+        .map((e) => UserProfile.fromJson(e))
+        .toList();
+  }
+
+  Future<void> fetchSubscriptionPlans() async {
+    try {
+      isLoadingPlans.value = true;
+      final authRepo = Get.find<AuthRepository>();
+      final plans = await authRepo.getAllPlans();
+      debugPrint('[HomeController] Loaded ${plans.length} subscription plans from API');
+      subscriptionPlans.assignAll(plans);
+    } catch (e) {
+      debugPrint('[HomeController] Error loading subscription plans: $e');
+    } finally {
+      isLoadingPlans.value = false;
+    }
+  }
+
+  Future<void> fetchUserSubscription() async {
+    try {
+      final authRepo = Get.find<AuthRepository>();
+      final sub = await authRepo.getMySubscription();
+      debugPrint('[HomeController] Loaded user subscription from API. Has Active: ${sub.hasActiveSubscription}');
+      currentSubscription.value = sub;
+      // Mirror subscription status to whoLikedMeSubscription
+      if (sub.hasActiveSubscription && sub.isActive) {
+        hasWhoLikedMeSubscription.value = true;
+      }
+    } catch (e) {
+      debugPrint('[HomeController] Error loading user subscription: $e');
+    }
+  }
+
+  Future<bool> purchaseSubscription(String planId, String billingCycle) async {
+    try {
+      isSubmittingSubscription.value = true;
+      final authRepo = Get.find<AuthRepository>();
+      final response = await authRepo.subscribe(
+        planId: planId,
+        billingCycle: billingCycle,
+      );
+      
+      debugPrint('[HomeController] Purchase subscription response: $response');
+      
+      if (response['success'] == true) {
+        Get.snackbar(
+          'Success',
+          'Successfully subscribed to plan!',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColors.success.withOpacity(0.9),
+          colorText: Colors.white,
+        );
+        // Refresh subscription state
+        await fetchUserSubscription();
+        // Refresh who liked me profiles list
+        await loadWhoLikedMeProfiles();
+        return true;
+      } else {
+        Get.snackbar(
+          'Subscription Failed',
+          response['message']?.toString() ?? 'Failed to subscribe. Please try again.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColors.surface,
+          colorText: AppColors.textPrimary,
+        );
+        return false;
+      }
+    } catch (e) {
+      debugPrint('[HomeController] Error subscribing: $e');
+      Get.snackbar(
+        'Subscription Error',
+        'An error occurred: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.surface,
+        colorText: AppColors.textPrimary,
+      );
+      return false;
+    } finally {
+      isSubmittingSubscription.value = false;
+    }
+  }
+
+  Map<String, dynamic> _mapUserProfileToLikedProfile(UserProfile up) {
+    String picUrl = up.profilePic;
+    if (picUrl.isEmpty) {
+      picUrl = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80';
+    } else if (!picUrl.startsWith('http') && !picUrl.startsWith('assets/')) {
+      picUrl = picUrl.startsWith('/')
+          ? 'https://datingapp-oz22.onrender.com$picUrl'
+          : 'https://datingapp-oz22.onrender.com/$picUrl';
+    }
+    return {
+      'name': up.name,
+      'age': up.age,
+      'occupation': up.jobTitle.isNotEmpty ? up.jobTitle : 'Professional',
+      'imageUrl': picUrl,
+      'id': up.id,
+    };
+  }
+
+  Future<void> searchLikedProfiles(String query) async {
+    if (query.trim().isEmpty) {
+      loadWhoLikedMeProfiles();
+      return;
+    }
+    
+    try {
+      isLoadingLikesSearch.value = true;
+      final authRepo = Get.find<AuthRepository>();
+      final List<UserProfile> results = await authRepo.searchLikes(query);
+      likedProfilesList.assignAll(results.map(_mapUserProfileToLikedProfile).toList());
+    } catch (e) {
+      debugPrint('[HomeController] Error searching likes: $e');
+    } finally {
+      isLoadingLikesSearch.value = false;
+    }
+  }
+
   /// Fetch real matches from the API and populate the matches list.
   Future<void> _loadMatchesFromApi() async {
     try {
@@ -390,46 +609,36 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     }
   }
 
-  void _loadInitialChats() {
-    chatThreads.addAll([
-      ChatThread(
-        id: '1',
-        name: 'Maya',
-        imageUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80',
-        initialMessage: 'That sounds like a perfect plan for Saturday! ☕',
-        initialTime: '12:45 PM',
-        unread: true,
-        online: true,
-      ),
-      ChatThread(
-        id: '2',
-        name: 'David',
-        imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-        initialMessage: 'I really enjoyed that documentary too!',
-        initialTime: 'Yesterday',
-      ),
-      ChatThread(
-        id: '3',
-        name: 'Chloe',
-        imageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80',
-        initialMessage: 'How was your weekend hiking trip?',
-        initialTime: 'Yesterday',
-      ),
-      ChatThread(
-        id: '4',
-        name: 'Alex',
-        imageUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
-        initialMessage: 'Haha, that\'s hilarious! I can\'t believe that happened.',
-        initialTime: 'Tuesday',
-      ),
-      ChatThread(
-        id: '5',
-        name: 'Sarah',
-        imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-        initialMessage: 'Let me know if you want the link to that playlist.',
-        initialTime: 'Monday',
-      ),
-    ]);
+
+  Future<void> _loadMessagesFromApi(ChatThread chat) async {
+    try {
+      isLoadingMessages.value = true;
+      final chatRepo = Get.find<ChatRepository>();
+      final List<dynamic> msgList = await chatRepo.getChatMessages(chat.id);
+      debugPrint('[HomeController] [REST] getChatMessages returned ${msgList.length} items for chat ${chat.id}');
+      
+      final List<Map<String, dynamic>> parsedMessages = [];
+      for (var m in msgList) {
+        if (m is Map) {
+          final String text = m['message']?.toString() ?? m['text']?.toString() ?? '';
+          final String senderId = m['senderId']?.toString() ?? m['sender']?['_id']?.toString() ?? m['sender']?.toString() ?? '';
+          final bool isMe = senderId == currentUserProfile.value?.id || m['sender'] == 'me';
+          parsedMessages.add({
+            'text': text,
+            'sender': isMe ? 'me' : 'them',
+            'time': m['time']?.toString() ?? _formatCurrentTime(),
+            'date': m['date']?.toString() ?? 'TODAY',
+          });
+        }
+      }
+      if (parsedMessages.isNotEmpty) {
+        chat.messages.assignAll(parsedMessages);
+      }
+    } catch (e) {
+      debugPrint('[HomeController] Error loading messages from API: $e');
+    } finally {
+      isLoadingMessages.value = false;
+    }
   }
 
   // --- Swiping Deck Actions ---
@@ -765,40 +974,14 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   // --- Messaging Chat Detail View & Socket Handling ---
 
   void openChatDetail(ChatThread chat) {
-    debugPrint('[HomeController] [Socket] openChatDetail() called - chatId: "${chat.id}", name: "${chat.name}"');
-    // Fetch latest messages & status for chat via Socket.IO
+    debugPrint('[HomeController] openChatDetail() called - chatId: "${chat.id}", name: "${chat.name}"');
+    
+    // Fetch latest messages via REST API
+    _loadMessagesFromApi(chat);
+
+    // Fetch user status via Socket.IO
     try {
       final socketService = Get.find<SocketService>();
-      // 3. getMessages
-      debugPrint('[HomeController] [Socket] Requesting messages for chatId: "${chat.id}"');
-      socketService.getMessages(
-        chatId: chat.id,
-        callback: (msgList) {
-          debugPrint('[HomeController] [Socket] getMessages callback for "${chat.id}" returned ${msgList.length} raw messages');
-          if (msgList.isNotEmpty) {
-            final List<Map<String, dynamic>> parsedMessages = [];
-            for (var m in msgList) {
-              if (m is Map) {
-                final String text = m['message']?.toString() ?? m['text']?.toString() ?? '';
-                final String senderId = m['senderId']?.toString() ?? m['sender']?['_id']?.toString() ?? m['sender']?.toString() ?? '';
-                final bool isMe = senderId == currentUserProfile.value?.id || m['sender'] == 'me';
-                parsedMessages.add({
-                  'text': text,
-                  'sender': isMe ? 'me' : 'them',
-                  'time': m['time']?.toString() ?? _formatCurrentTime(),
-                  'date': m['date']?.toString() ?? 'TODAY',
-                });
-              }
-            }
-            debugPrint('[HomeController] [Socket] Parsed ${parsedMessages.length} messages for chat thread.');
-            if (parsedMessages.isNotEmpty) {
-              chat.messages.assignAll(parsedMessages);
-            }
-          }
-        },
-      );
-
-      // 6. getUserStatus
       debugPrint('[HomeController] [Socket] Requesting user status for targetUserId (chatId): "${chat.id}"');
       socketService.getUserStatus(
         targetUserId: chat.id,
@@ -808,7 +991,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
         },
       );
     } catch (e) {
-      debugPrint('[HomeController] Error calling socket getMessages/getUserStatus: $e');
+      debugPrint('[HomeController] Error calling socket getUserStatus: $e');
     }
 
     Get.toNamed(Routes.chatDetail, arguments: chat);
@@ -863,7 +1046,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     return newChat;
   }
 
-  void sendMessage(ChatThread chat) {
+  void sendMessage(ChatThread chat) async {
     final text = chatInputController.text.trim();
     if (text.isEmpty) return;
 
@@ -882,19 +1065,26 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     chat.time.value = time;
     chat.isTyping.value = false;
 
-    // 1. Send message via Socket.IO ("sendMessage")
+    // Send message via Socket
     try {
       final socketService = Get.find<SocketService>();
-      debugPrint('[HomeController] [Socket] Dispatching sendMessage to SocketService receiverId: "${chat.id}"');
+      debugPrint('[HomeController] [Socket] Dispatching sendMessage receiverId: "${chat.id}"');
       socketService.sendMessage(
         receiverId: chat.id,
         message: text,
         onAck: (response) {
-          debugPrint('[HomeController] [Socket] sendMessage socket ack callback received: $response');
+          debugPrint('[HomeController] [Socket] sendMessage response: $response');
         },
       );
     } catch (e) {
-      debugPrint('[HomeController] Error sending socket message: $e');
+      debugPrint('[HomeController] Error sending Socket message: $e');
+      Get.snackbar(
+        'Send Error',
+        'Failed to send message via socket. Please try again.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.surface,
+        colorText: AppColors.textPrimary,
+      );
     }
 
     // Demo fallback for Elena

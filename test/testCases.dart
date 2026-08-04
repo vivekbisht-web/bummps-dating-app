@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
 
-class TestCases  extends StatefulWidget{
+class TestCases extends StatefulWidget {
   const TestCases({super.key});
 
   @override
   State<StatefulWidget> createState() => _TestCasesState();
-
 }
 
-class _TestCasesState extends State<TestCases> {
+class _TestCasesState extends State <TestCases> {
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
     return Scaffold(
+      appBar: AppBar(
+        title: Text('Test Cases'),
+      ),
 
+      body: Text('All test Cases'),
     );
   }
 }

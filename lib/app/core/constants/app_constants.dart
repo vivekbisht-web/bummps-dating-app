@@ -15,5 +15,12 @@ class AppConstants {
   static const String pass = 'matches/pass';
   static const String rewind = 'matches/rewind';
   static const String filter = 'matches/filter';
+  static const String searchLikes = 'matches/search-likes';
+  static const String whoLikedMe = 'matches/who-liked-me';
+  static const String whoLikedMeFilter = 'matches/who-liked-me/filter';
 
+  // Plans Endpoints
+  static const String allPlans = 'plans/allplans';
+  static const String subscribe = 'plans/subscribe';
+  static const String mySubscription = 'plans/my-subscription';
 }

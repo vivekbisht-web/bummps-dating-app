@@ -161,102 +161,196 @@ class _PlansViewState extends State<PlansView> {
               const SizedBox(height: 24),
 
               // --- Subscription Tier Card ---
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.gold, width: 1.2),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'ENHANCED EXPERIENCE',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.gold,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
-                        letterSpacing: 1.2,
-                      ),
+              Obx(() {
+                final controller = Get.find<HomeController>();
+                if (controller.isLoadingPlans.value) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(40.0),
+                      child: CircularProgressIndicator(color: AppColors.gold),
                     ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Gold',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(
-                          isMonthly ? '\$29.99' : '\$17.99',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 34,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Text(
-                          '/mo',
-                          style: TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (!isMonthly) ...[
-                      const SizedBox(height: 4),
-                      const Text(
-                        '\$215.88 billed annually',
-                        style: TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 20),
+                  );
+                }
 
-                    // Feature bullet points
-                    _buildFeaturePoint('Unlimited Likes'),
-                    _buildFeaturePoint('See Who Liked You'),
-                    _buildFeaturePoint('1 Profile Boost per week'),
-                    _buildFeaturePoint('Travel Mode enabled'),
-
-                    const SizedBox(height: 24),
-
-                    // Subscribe CTA
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.gold,
-                        foregroundColor: AppColors.onGold,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        minimumSize: const Size.fromHeight(48),
-                      ),
-                      onPressed: () {},
+                if (controller.subscriptionPlans.isEmpty) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20.0),
                       child: Text(
-                        'SUBSCRIBE NOW',
-                        style: AppTextStyles.button.copyWith(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.0,
-                        ),
+                        'No plans available at the moment.',
+                        style: TextStyle(color: AppColors.textSecondary),
                       ),
                     ),
-                  ],
-                ),
-              ),
+                  );
+                }
+
+                return Column(
+                  children: controller.subscriptionPlans.map((plan) {
+                    final bool isCurrentPlan = controller.currentSubscription.value?.planId == plan.id &&
+                        controller.currentSubscription.value?.isActive == true;
+                    final double price = isMonthly ? plan.monthlyPrice : plan.annualPrice;
+                    
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 20),
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: isCurrentPlan 
+                              ? AppColors.gold 
+                              : (plan.isPopular ? AppColors.gold.withOpacity(0.5) : AppColors.divider), 
+                          width: isCurrentPlan ? 2.0 : 1.2
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                plan.subtitle.toUpperCase(),
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.gold,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 10,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                              if (plan.isPopular)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF2C2414),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: AppColors.gold, width: 0.8),
+                                  ),
+                                  child: const Text(
+                                    'POPULAR',
+                                    style: TextStyle(
+                                      color: AppColors.gold,
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                plan.name,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              if (isCurrentPlan)
+                                const Text(
+                                  'ACTIVE',
+                                  style: TextStyle(
+                                    color: AppColors.gold,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                '\$${price.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 34,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Text(
+                                '/mo',
+                                style: TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (!isMonthly) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              '\$${(price * 12).toStringAsFixed(2)} billed annually',
+                              style: const TextStyle(
+                                color: AppColors.textMuted,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 20),
+
+                          // Dynamic Features bullet points
+                          ...plan.features.map((feature) => _buildFeaturePoint(
+                                feature.text,
+                                isIncluded: feature.included,
+                              )),
+
+                          const SizedBox(height: 24),
+
+                          // Subscribe CTA
+                          Obx(() {
+                            final isSubmitting = controller.isSubmittingSubscription.value;
+                            return ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isCurrentPlan ? Colors.grey[900] : AppColors.gold,
+                                foregroundColor: isCurrentPlan ? Colors.white60 : AppColors.onGold,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                minimumSize: const Size.fromHeight(48),
+                              ),
+                              onPressed: (isCurrentPlan || isSubmitting) 
+                                  ? null 
+                                  : () async {
+                                      await controller.purchaseSubscription(
+                                        plan.id,
+                                        isMonthly ? 'monthly' : 'annual',
+                                      );
+                                    },
+                              child: isSubmitting 
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppColors.onGold,
+                                      ),
+                                    )
+                                  : Text(
+                                      isCurrentPlan ? 'YOUR CURRENT PLAN' : 'SUBSCRIBE NOW',
+                                      style: AppTextStyles.button.copyWith(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.0,
+                                      ),
+                                    ),
+                            );
+                          }),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                );
+              }),
               const SizedBox(height: 32),
 
               // --- The Bummps Advantage Section ---
@@ -370,23 +464,24 @@ class _PlansViewState extends State<PlansView> {
     );
   }
 
-  Widget _buildFeaturePoint(String text) {
+  Widget _buildFeaturePoint(String text, {bool isIncluded = true}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Row(
         children: [
-          const Icon(
-            Icons.check_circle,
-            color: AppColors.gold,
+          Icon(
+            isIncluded ? Icons.check_circle : Icons.cancel,
+            color: isIncluded ? AppColors.gold : Colors.white24,
             size: 20,
           ),
           const SizedBox(width: 12),
           Text(
             text,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: isIncluded ? Colors.white : Colors.white38,
               fontSize: 14,
               fontWeight: FontWeight.w500,
+              decoration: isIncluded ? null : TextDecoration.lineThrough,
             ),
           ),
         ],

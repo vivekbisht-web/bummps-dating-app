@@ -1,8 +1,10 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../routes/app_pages.dart';
 import '../controllers/home_controller.dart';
 
 class LikedHistoryView extends GetView<HomeController> {
@@ -10,45 +12,6 @@ class LikedHistoryView extends GetView<HomeController> {
 
   @override
   Widget build(BuildContext context) {
-    // List of liked profiles mock data matching the screenshot exactly
-    final List<Map<String, dynamic>> likedProfiles = [
-      {
-        'name': 'Elena',
-        'age': 28,
-        'occupation': 'Interior Designer',
-        'imageUrl': 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80',
-      },
-      {
-        'name': 'Marcus',
-        'age': 32,
-        'occupation': 'Tech Architect',
-        'imageUrl': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-      },
-      {
-        'name': 'Sophia',
-        'age': 26,
-        'occupation': 'Gallery Curator',
-        'imageUrl': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-      },
-      {
-        'name': 'Julian',
-        'age': 30,
-        'occupation': 'Film Director',
-        'imageUrl': 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80',
-      },
-      {
-        'name': 'Mashooqa',
-        'age': 29,
-        'occupation': 'Fashion Stylist',
-        'imageUrl': 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&auto=format&fit=crop&q=80',
-      },
-      {
-        'name': 'Adrian',
-        'age': 34,
-        'occupation': 'Private Equity',
-        'imageUrl': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
-      },
-    ];
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -91,6 +54,7 @@ class LikedHistoryView extends GetView<HomeController> {
                     Expanded(
                       child: TextField(
                         style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
+                        onChanged: (value) => controller.searchLikedProfiles(value),
                         decoration: const InputDecoration(
                           hintText: 'Search your likes...',
                           hintStyle: TextStyle(color: AppColors.textMuted),
@@ -111,24 +75,35 @@ class LikedHistoryView extends GetView<HomeController> {
               padding: const EdgeInsets.symmetric(vertical: 12.0),
               child: SizedBox(
                 height: 38,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  children: [
-                    _buildFilterChip('All Likes', isActive: true),
-                    _buildFilterChip('Recent'),
-                    _buildFilterChip('Verified'),
-                    _buildFilterChip('Nearby'),
-                  ],
-                ),
+                child: Obx(() {
+                  final active = controller.selectedLikesFilter.value;
+                  return ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    children: [
+                      _buildFilterChip('All Likes', 'all', active == 'all'),
+                      _buildFilterChip('Recent', 'recent', active == 'recent'),
+                      _buildFilterChip('Verified', 'verified', active == 'verified'),
+                      _buildFilterChip('Nearby', 'nearby', active == 'nearby'),
+                    ],
+                  );
+                }),
               ),
             ),
 
             // --- Profiles Grid ---
-            Expanded(
-              child: GridView.builder(
+            Obx(() {
+              if (controller.isLoadingLikesSearch.value) {
+                return const Expanded(
+                  child: Center(
+                    child: CircularProgressIndicator(color: AppColors.gold),
+                  ),
+                );
+              }
+
+              final Widget grid = GridView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: likedProfiles.length,
+                itemCount: controller.likedProfilesList.length,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   childAspectRatio: 0.74,
@@ -136,11 +111,130 @@ class LikedHistoryView extends GetView<HomeController> {
                   mainAxisSpacing: 14,
                 ),
                 itemBuilder: (context, index) {
-                  final profile = likedProfiles[index];
+                  final profile = controller.likedProfilesList[index];
                   return _buildProfileCard(profile);
                 },
-              ),
-            ),
+              );
+
+              if (controller.hasWhoLikedMeSubscription.value == false) {
+                return Expanded(
+                  child: Stack(
+                    children: [
+                      // Blurred Grid Background
+                      Positioned.fill(
+                        child: ImageFiltered(
+                          imageFilter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
+                          child: grid,
+                        ),
+                      ),
+                      // Darkening overlay
+                      Positioned.fill(
+                        child: Container(
+                          color: Colors.black.withOpacity(0.4),
+                        ),
+                      ),
+                      // Premium Paywall Card
+                      Center(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(24.0),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(24),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                              child: Container(
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.75),
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(
+                                    color: AppColors.gold.withOpacity(0.5),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF2C2414),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: AppColors.gold, width: 1.5),
+                                      ),
+                                      child: const Icon(
+                                        Icons.lock_outline,
+                                        color: AppColors.gold,
+                                        size: 32,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    Text(
+                                      'Unlock Who Liked You',
+                                      textAlign: TextAlign.center,
+                                      style: AppTextStyles.titleMedium.copyWith(
+                                        color: Colors.white,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      controller.whoLikedMeErrorMessage.value.isNotEmpty
+                                          ? controller.whoLikedMeErrorMessage.value
+                                          : 'Active subscription required to see who liked you. Get Bummps Gold to see everyone who swiped right on you.',
+                                      textAlign: TextAlign.center,
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 13,
+                                        height: 1.45,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 24),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.gold,
+                                        foregroundColor: AppColors.onGold,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                                        minimumSize: const Size.fromHeight(48),
+                                      ),
+                                      onPressed: () => Get.toNamed(Routes.plans),
+                                      child: Text(
+                                        'GET GOLD SUBSCRIPTION',
+                                        style: AppTextStyles.button.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.0,
+                                        ),
+                                      ),
+                                    ),
+
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              if (controller.likedProfilesList.isEmpty) {
+                return const Expanded(
+                  child: Center(
+                    child: Text(
+                      'No likes found.',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  ),
+                );
+              }
+
+              return Expanded(child: grid);
+            }),
 
             // --- Footer Area ---
             Padding(
@@ -159,14 +253,16 @@ class LikedHistoryView extends GetView<HomeController> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        'You have 128 profile matches waiting',
+                      Obx(() => Text(
+                        controller.hasWhoLikedMeSubscription.value
+                            ? 'You have ${controller.likedProfilesList.length} matches waiting'
+                            : 'You have 128 profile matches waiting',
                         style: AppTextStyles.caption.copyWith(
                           color: AppColors.textSecondary,
                           fontWeight: FontWeight.w600,
                           fontSize: 11,
                         ),
-                      ),
+                      )),
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -196,7 +292,7 @@ class LikedHistoryView extends GetView<HomeController> {
     );
   }
 
-  Widget _buildFilterChip(String label, {bool isActive = false}) {
+  Widget _buildFilterChip(String label, String filterKey, bool isActive) {
     return Container(
       margin: const EdgeInsets.only(right: 10),
       decoration: BoxDecoration(
@@ -210,7 +306,10 @@ class LikedHistoryView extends GetView<HomeController> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {},
+          onTap: () {
+            controller.selectedLikesFilter.value = filterKey;
+            controller.loadWhoLikedMeProfiles();
+          },
           borderRadius: BorderRadius.circular(20),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import '../../core/services/storage/secure_storage_service.dart';
 import '../models/login_response.dart';
 import '../models/user_profile.dart';
+import '../models/subscription_plan.dart';
 import '../providers/auth_provider.dart';
 
 class AuthRepository {
@@ -51,6 +52,46 @@ class AuthRepository {
     );
   }
 
+  /// Search user's likes — GET /api/matches/search-likes?query=X
+  Future<List<UserProfile>> searchLikes(String query) async {
+    return await _authProvider.searchLikes(query);
+  }
+
+  /// Get users who liked current user: GET /api/matches/who-liked-me/filter
+  Future<dynamic> getWhoLikedMe({
+    required String filter,
+    int page = 1,
+    int limit = 10,
+  }) async {
+    return await _authProvider.getWhoLikedMe(
+      filter: filter,
+      page: page,
+      limit: limit,
+    );
+  }
+
+  /// Check who liked me base: GET /api/matches/who-liked-me
+  Future<dynamic> checkWhoLikedMe() async {
+    return await _authProvider.checkWhoLikedMe();
+  }
+
+  /// Get all subscription plans
+  Future<List<SubscriptionPlan>> getAllPlans() async {
+    return await _authProvider.getAllPlans();
+  }
+
+  /// Purchase a subscription plan
+  Future<Map<String, dynamic>> subscribe({
+    required String planId,
+    required String billingCycle,
+  }) async {
+    return await _authProvider.subscribe(planId: planId, billingCycle: billingCycle);
+  }
+
+  /// Fetch user active subscription
+  Future<UserSubscription> getMySubscription() async {
+    return await _authProvider.getMySubscription();
+  }
 
   /// Register a like swipe against [targetUserId].
   /// Returns the response body which may contain `{ "isMatch": true }`.
