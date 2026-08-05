@@ -10,17 +10,21 @@ class BummpsLogo extends StatelessWidget {
     if (compact) {
       return Row(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Image.asset(
             'assets/images/bummps-icon.png',
-            height: 32,
+            height: 52,
             fit: BoxFit.contain,
           ),
-          const SizedBox(width: 1),
-          Image.asset(
-            'assets/images/bummps..png',
-            height: 24,
-            fit: BoxFit.contain,
+          // const SizedBox(width: 2),
+          Transform.translate(
+            offset: const Offset(0, 6),
+            child: Image.asset(
+              'assets/images/bummps..png',
+              height: 22,
+              fit: BoxFit.contain,
+            ),
           ),
         ],
       );
@@ -28,16 +32,10 @@ class BummpsLogo extends StatelessWidget {
 
     return Column(
       children: [
-        Image.asset(
-          'assets/images/bummps-icon.png',
-          height: 64,
-          fit: BoxFit.contain,
-        ),
-        Image.asset(
-          'assets/images/bummps..png',
-          height: 32,
-          fit: BoxFit.contain,
-        ),
+        Image.asset('assets/images/bummps-icon.png',
+            height: 64, fit: BoxFit.contain),
+        Image.asset('assets/images/bummps..png',
+            height: 32, fit: BoxFit.contain),
       ],
     );
   }

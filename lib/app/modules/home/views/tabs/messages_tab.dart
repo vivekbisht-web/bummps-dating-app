@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/bummps_logo.dart';
 import '../../controllers/home_controller.dart';
 
 class MessagesTab extends GetView<HomeController> {
@@ -13,11 +14,7 @@ class MessagesTab extends GetView<HomeController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Image.asset(
-          'assets/images/bummps..png',
-          height: 18,
-          fit: BoxFit.contain,
-        ),
+        title: const BummpsLogo(compact: true),
         centerTitle: true,
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,

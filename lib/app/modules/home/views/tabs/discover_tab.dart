@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/bummps_logo.dart';
 import '../../controllers/home_controller.dart';
 import 'profile_details_view.dart';
 
@@ -30,22 +31,8 @@ class DiscoverTab extends GetView<HomeController> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                GestureDetector(
-                  onTap: () {
-                    // Navigate to profile tab
-                    controller.activeTab.value = 3;
-                  },
-                  child: Image.asset(
-                    'assets/images/bummps-icon.png',
-                    height: 32,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                Image.asset(
-                  'assets/images/bummps..png',
-                  height: 18,
-                  fit: BoxFit.contain,
-                ),
+                const SizedBox(width: 48), // Balances the filter button width for perfect centering
+                const BummpsLogo(compact: true),
                 IconButton(
                   icon: Obx(() => Icon(
                     Icons.tune_outlined,

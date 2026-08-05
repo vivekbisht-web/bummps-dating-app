@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/bummps_logo.dart';
 import '../../controllers/home_controller.dart';
 
 class CommunityTab extends GetView<HomeController> {
@@ -15,19 +16,7 @@ class CommunityTab extends GetView<HomeController> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 16.0),
-          child: Image.asset(
-            'assets/images/bummps-icon.png',
-            fit: BoxFit.contain,
-          ),
-        ),
-        leadingWidth: 48,
-        title: Image.asset(
-          'assets/images/bummps..png',
-          height: 18,
-          fit: BoxFit.contain,
-        ),
+        title: const BummpsLogo(compact: true),
         centerTitle: true,
         automaticallyImplyLeading: false,
       ),
