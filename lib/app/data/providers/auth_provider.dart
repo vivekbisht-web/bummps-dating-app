@@ -188,6 +188,18 @@ class AuthProvider {
     );
   }
 
+  /// Send a super-like action — POST /api/swipes/super-like  { "targetUserId": id }
+  Future<Map<String, dynamic>> superLikeUser(String targetUserId) async {
+    return await _dioClient.post<Map<String, dynamic>>(
+      AppConstants.superLike,
+      data: {'targetUserId': targetUserId},
+      fromJson: (json) {
+        if (json is Map<String, dynamic>) return json;
+        return {};
+      },
+    );
+  }
+
   /// Send a pass (X/nope) action — POST /api/matches/pass  { "targetUserId": id }
   Future<Map<String, dynamic>> passUser(String targetUserId) async {
     return await _dioClient.post<Map<String, dynamic>>(

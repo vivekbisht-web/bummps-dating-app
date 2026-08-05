@@ -99,6 +99,11 @@ class AuthRepository {
     return await _authProvider.likeUser(targetUserId);
   }
 
+  /// Register a super-like swipe against [targetUserId].
+  Future<Map<String, dynamic>> superLikeUser(String targetUserId) async {
+    return await _authProvider.superLikeUser(targetUserId);
+  }
+
   /// Register a pass (X/nope) swipe against [targetUserId].
   Future<Map<String, dynamic>> passUser(String targetUserId) async {
     return await _authProvider.passUser(targetUserId);

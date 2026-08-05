@@ -18,6 +18,7 @@ class AppConstants {
   static const String searchLikes = 'matches/search-likes';
   static const String whoLikedMe = 'matches/who-liked-me';
   static const String whoLikedMeFilter = 'matches/who-liked-me/filter';
+  static const String superLike = 'swipes/super-like';
 
   // Plans Endpoints
   static const String allPlans = 'plans/allplans';

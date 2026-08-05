@@ -722,8 +722,10 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     swipeDirection.value = '';
 
     // Call the real API and check for a mutual match
-    if (action == 'like' || action == 'super') {
+    if (action == 'like') {
       _handleLikeAction(profile);
+    } else if (action == 'super') {
+      _handleSuperLikeAction(profile);
     } else if (action == 'nope') {
       _handlePassAction(profile);
     }
@@ -742,6 +744,24 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
       }
     } catch (e) {
       debugPrint('[HomeController] Like API error for ${profile.id}: $e');
+      // Silently fail — do not crash the swipe experience
+    }
+  }
+
+  /// Sends the super-like to the backend.
+  void _handleSuperLikeAction(ProfileCardData profile) async {
+    try {
+      final authRepo = Get.find<AuthRepository>();
+      final result = await authRepo.superLikeUser(profile.id);
+      final bool isMatch = result['isMatch'] == true ||
+          result['match'] == true ||
+          result['matched'] == true ||
+          (result['swipe'] != null && result['swipe']['isMatch'] == true);
+      if (isMatch) {
+        _triggerMatchDialog(profile);
+      }
+    } catch (e) {
+      debugPrint('[HomeController] Super Like API error for ${profile.id}: $e');
       // Silently fail — do not crash the swipe experience
     }
   }
