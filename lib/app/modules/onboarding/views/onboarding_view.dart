@@ -33,9 +33,9 @@ class OnboardingView extends GetView<OnboardingController> {
           // Logo + Skip row at the top.
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
               child: SizedBox(
-                height: 40,
+                height: 100,
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
@@ -43,13 +43,13 @@ class OnboardingView extends GetView<OnboardingController> {
                       alignment: Alignment.centerLeft,
                       child: Image.asset(
                         'assets/images/bummps-icon.png',
-                        height: 32,
+                        height: 70,
                         fit: BoxFit.contain,
                       ),
                     ),
                     Image.asset(
                       'assets/images/bummps..png',
-                      height: 20,
+                      height: 34,
                       fit: BoxFit.contain,
                     ),
                     Align(

@@ -1,3 +1,4 @@
+import 'package:bummps/app/core/widgets/bummps_logo.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -17,37 +18,16 @@ class LoginView extends GetView<LoginController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        leadingWidth: 90,
-        leading: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(width: 4),
-            IconButton(
-              icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-              onPressed: Get.back,
-            ),
-            Image.asset(
-              'assets/images/bummps-icon.png',
-              height: 24,
-              fit: BoxFit.contain,
-            ),
-          ],
-        ),
-        title: Image.asset(
-          'assets/images/bummps..png',
-          height: 18,
-          fit: BoxFit.contain,
-        ),
-        centerTitle: true,
-      ),
+
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 12),
+              const SizedBox(height: 24),
+              const BummpsLogo(),
+              const SizedBox(height: 24),
               Text('Welcome back', style: AppTextStyles.displayLarge),
               const SizedBox(height: 8),
               Text(
@@ -125,7 +105,7 @@ class _AuthCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Obx(
-              () => AuthTextField(
+                  () => AuthTextField(
                 label: 'Password',
                 hint: '••••••••',
                 controller: controller.passwordController,
@@ -153,7 +133,7 @@ class _AuthCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Obx(
-              () => PrimaryButton(
+                  () => PrimaryButton(
                 label: controller.isLoading.value
                     ? 'Please wait...'
                     : 'Continue with Email',
