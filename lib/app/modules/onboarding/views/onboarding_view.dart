@@ -4,6 +4,7 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/bummps_logo.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../controllers/onboarding_controller.dart';
 
@@ -35,27 +36,12 @@ class OnboardingView extends GetView<OnboardingController> {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
               child: SizedBox(
-                height: 100,
-                child: Stack(
-                  alignment: Alignment.center,
+                height: 60,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Image.asset(
-                        'assets/images/bummps-icon.png',
-                        height: 70,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                    Image.asset(
-                      'assets/images/bummps..png',
-                      height: 34,
-                      fit: BoxFit.contain,
-                    ),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: _SkipButton(onTap: controller.skip),
-                    ),
+                    const BummpsLogo(compact: true),
+                    _SkipButton(onTap: controller.skip),
                   ],
                 ),
               ),

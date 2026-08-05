@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/bummps_logo.dart';
 import '../controllers/profile_setup_controller.dart';
 import 'steps/about_you_step.dart';
 import 'steps/basic_info_step.dart';
@@ -19,23 +20,11 @@ class ProfileScreen extends GetView<ProfileSetupController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        leadingWidth: 90,
-        leading: GestureDetector(
-          onTap: controller.back,
-          behavior: HitTestBehavior.opaque,
-          child: Padding(
-            padding: const EdgeInsets.only(left: 16.0),
-            child: Image.asset(
-              'assets/images/bummps-icon.png',
-              fit: BoxFit.contain,
-            ),
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary),
+          onPressed: controller.back,
         ),
-        title: Image.asset(
-          'assets/images/bummps..png',
-          height: 18,
-          fit: BoxFit.contain,
-        ),
+        title: const BummpsLogo(compact: true),
         centerTitle: true,
       ),
       body: SafeArea(
