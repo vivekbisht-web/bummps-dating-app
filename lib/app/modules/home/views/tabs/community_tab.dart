@@ -74,21 +74,35 @@ class CommunityTab extends GetView<HomeController> {
               const SizedBox(height: 14),
               SizedBox(
                 height: 170,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    _buildEventCard(
-                      title: 'Gala Night in Paris',
-                      date: 'OCT 24',
-                      imageUrl: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&auto=format&fit=crop&q=80',
-                    ),
-                    _buildEventCard(
-                      title: 'Private Vineyard tasting',
-                      date: 'NOV 12',
-                      imageUrl: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=600&auto=format&fit=crop&q=80',
-                    ),
-                  ],
-                ),
+                child: Obx(() {
+                  if (controller.isLoadingCircleEvents.value) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: AppColors.gold),
+                    );
+                  }
+                  if (controller.circleEvents.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'No events available',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    );
+                  }
+                  return ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: controller.circleEvents.length,
+                    itemBuilder: (context, index) {
+                      final event = controller.circleEvents[index];
+                      return _buildEventCard(
+                        title: event.title,
+                        date: event.dateText,
+                        imageUrl: event.image,
+                      );
+                    },
+                  );
+                }),
               ),
               const SizedBox(height: 28),
 
@@ -108,28 +122,41 @@ class CommunityTab extends GetView<HomeController> {
                 ],
               ),
               const SizedBox(height: 14),
-              _buildDiscussionCard(
-                category: 'PHILOSOPHY',
-                isNew: true,
-                title: 'The Art of Conversation',
-                subtitle: 'Exploring the nuance of non-verbal cues',
-                repliesCount: 128,
-                timeAgo: '2h ago',
-              ),
-              _buildDiscussionCard(
-                category: 'LIFESTYLE',
-                title: 'Travel Destinations for Two',
-                subtitle: 'Hidden gems from the Amalfi Coast to...',
-                repliesCount: 84,
-                timeAgo: '5h ago',
-              ),
-              _buildDiscussionCard(
-                category: 'COLLECTIBLES',
-                title: 'Vintage Horology Insights',
-                subtitle: 'Why independent watchmakers are...',
-                repliesCount: 210,
-                timeAgo: '1d ago',
-              ),
+              Obx(() {
+                if (controller.isLoadingDiscussions.value) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: CircularProgressIndicator(color: AppColors.gold),
+                    ),
+                  );
+                }
+                if (controller.circleDiscussions.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text(
+                        'No discussions yet',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  );
+                }
+                return Column(
+                  children: controller.circleDiscussions.map((discussion) {
+                    return _buildDiscussionCard(
+                      category: discussion.category,
+                      isNew: discussion.isNewTag,
+                      title: discussion.title,
+                      subtitle: discussion.subtitle,
+                      repliesCount: discussion.repliesCount,
+                      timeAgo: _timeAgo(discussion.createdAt),
+                    );
+                  }).toList(),
+                );
+              }),
               const SizedBox(height: 28),
 
               // --- Member Spotlight Section ---
@@ -247,7 +274,7 @@ class CommunityTab extends GetView<HomeController> {
                     const SizedBox(height: 24),
 
                     // CONNECT button
-                    ElevatedButton(
+                    Obx(() => ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.gold,
                         foregroundColor: AppColors.onGold,
@@ -256,16 +283,30 @@ class CommunityTab extends GetView<HomeController> {
                         ),
                         minimumSize: const Size.fromHeight(48),
                       ),
-                      onPressed: () {},
-                      child: Text(
-                        'CONNECT WITH ELENA',
-                        style: AppTextStyles.button.copyWith(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
+                      onPressed: controller.isConnecting.value
+                          ? null
+                          : () {
+                              // TODO: Replace with dynamic spotlight member ID
+                              controller.connectWithMember('65f123456789abcdef123456');
+                            },
+                      child: controller.isConnecting.value
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.black,
+                              ),
+                            )
+                          : Text(
+                              'CONNECT WITH ELENA',
+                              style: AppTextStyles.button.copyWith(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                    )),
                   ],
                 ),
               ),
@@ -547,5 +588,14 @@ class CommunityTab extends GetView<HomeController> {
         ),
       ),
     );
+  }
+
+  String _timeAgo(DateTime dateTime) {
+    final now = DateTime.now();
+    final diff = now.difference(dateTime);
+    if (diff.inDays > 0) return '${diff.inDays}d ago';
+    if (diff.inHours > 0) return '${diff.inHours}h ago';
+    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
+    return 'just now';
   }
 }

@@ -13,6 +13,7 @@ import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/chat_repository.dart';
 import '../../../data/models/user_profile.dart';
 import '../../../data/models/subscription_plan.dart';
+import '../../../data/models/circle_dashboard.dart';
 
 /// Representation of a discover profile card.
 class ProfileCardData {
@@ -144,6 +145,15 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   final RxBool isLoadingPlans = false.obs;
   final RxBool isSubmittingSubscription = false.obs;
 
+  // Circle Events state
+  final RxList<CircleEvent> circleEvents = <CircleEvent>[].obs;
+  final RxBool isLoadingCircleEvents = false.obs;
+
+  // Circle Discussions state
+  final RxList<TrendingDiscussion> circleDiscussions = <TrendingDiscussion>[].obs;
+  final RxBool isLoadingDiscussions = false.obs;
+  final RxBool isSubmittingDiscussion = false.obs;
+
   // Text controller for chat inputs
   final TextEditingController chatInputController = TextEditingController();
 
@@ -178,7 +188,95 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     _loadLikesYouList();
     _loadMatchesFromApi();
     loadWhoLikedMeProfiles();
+    fetchCircleEvents();
+    fetchCircleDiscussions();
     _initSocketService();
+  }
+
+  /// Fetch circle events from GET /api/circle/events
+  Future<void> fetchCircleEvents() async {
+    try {
+      isLoadingCircleEvents.value = true;
+      final authRepo = Get.find<AuthRepository>();
+      final events = await authRepo.getCircleEvents();
+      circleEvents.assignAll(events);
+    } catch (e) {
+      debugPrint('[HomeController] Error fetching circle events: $e');
+    } finally {
+      isLoadingCircleEvents.value = false;
+    }
+  }
+
+  /// Fetch circle discussions from GET /api/circle/discussions
+  Future<void> fetchCircleDiscussions() async {
+    try {
+      isLoadingDiscussions.value = true;
+      final authRepo = Get.find<AuthRepository>();
+      final discussions = await authRepo.getCircleDiscussions();
+      circleDiscussions.assignAll(discussions);
+    } catch (e) {
+      debugPrint('[HomeController] Error fetching circle discussions: $e');
+    } finally {
+      isLoadingDiscussions.value = false;
+    }
+  }
+
+  /// Create a circle discussion via POST /api/circle/discussions
+  /// Automatically refreshes the discussions list on success.
+  Future<void> createDiscussion({
+    required String category,
+    required String title,
+    required String subtitle,
+    bool isNewTag = false,
+  }) async {
+    try {
+      isSubmittingDiscussion.value = true;
+      final authRepo = Get.find<AuthRepository>();
+      await authRepo.createDiscussion(
+        category: category,
+        title: title,
+        subtitle: subtitle,
+        isNewTag: isNewTag,
+      );
+      // Refresh the list after successful creation
+      await fetchCircleDiscussions();
+    } catch (e) {
+      debugPrint('[HomeController] Error creating discussion: $e');
+    } finally {
+      isSubmittingDiscussion.value = false;
+    }
+  }
+
+  /// Connect with a circle member — POST /api/circle/connect/:userId
+  final RxBool isConnecting = false.obs;
+
+  Future<void> connectWithMember(String userId) async {
+    try {
+      isConnecting.value = true;
+      final authRepo = Get.find<AuthRepository>();
+      final result = await authRepo.connectWithMember(userId);
+      debugPrint('[HomeController] Connect with member result: $result');
+      Get.snackbar(
+        'Connection Sent',
+        'Your connection request has been sent!',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.gold,
+        colorText: Colors.black,
+        duration: const Duration(seconds: 2),
+      );
+    } catch (e) {
+      debugPrint('[HomeController] Error connecting with member: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to send connection request',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 2),
+      );
+    } finally {
+      isConnecting.value = false;
+    }
   }
 
   void _initSocketService() async {

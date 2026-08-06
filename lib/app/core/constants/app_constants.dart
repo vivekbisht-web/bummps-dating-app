@@ -24,4 +24,10 @@ class AppConstants {
   static const String allPlans = 'plans/allplans';
   static const String subscribe = 'plans/subscribe';
   static const String mySubscription = 'plans/my-subscription';
+
+  // Circle Endpoints
+  static const String circleDashboard = 'circle/dashboard';
+  static const String circleEvents = 'circle/events';
+  static const String circleDiscussions = 'circle/discussions';
+  static const String circleConnect = 'circle/connect';
 }

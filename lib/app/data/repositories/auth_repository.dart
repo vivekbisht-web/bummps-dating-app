@@ -3,6 +3,7 @@ import '../../core/services/storage/secure_storage_service.dart';
 import '../models/login_response.dart';
 import '../models/user_profile.dart';
 import '../models/subscription_plan.dart';
+import '../models/circle_dashboard.dart';
 import '../providers/auth_provider.dart';
 
 class AuthRepository {
@@ -91,6 +92,42 @@ class AuthRepository {
   /// Fetch user active subscription
   Future<UserSubscription> getMySubscription() async {
     return await _authProvider.getMySubscription();
+  }
+
+  /// Fetch circle dashboard — GET /api/circle/dashboard
+  /// Returns events, trendingDiscussions, memberSpotlight, onlineCircleCount.
+  Future<CircleDashboard> getCircleDashboard() async {
+    return await _authProvider.getCircleDashboard();
+  }
+
+  /// Fetch circle events — GET /api/circle/events
+  Future<List<CircleEvent>> getCircleEvents() async {
+    return await _authProvider.getCircleEvents();
+  }
+
+  /// Fetch all circle discussions — GET /api/circle/discussions
+  Future<List<TrendingDiscussion>> getCircleDiscussions() async {
+    return await _authProvider.getCircleDiscussions();
+  }
+
+  /// Create a circle discussion — POST /api/circle/discussions
+    Future<TrendingDiscussion> createDiscussion({
+    required String category,
+    required String title,
+    required String subtitle,
+    required bool isNewTag,
+  }) async {
+    return await _authProvider.createDiscussion(
+      category: category,
+      title: title,
+      subtitle: subtitle,
+      isNewTag: isNewTag,
+    );
+  }
+
+  /// Connect with a circle member — POST /api/circle/connect/:userId
+  Future<Map<String, dynamic>> connectWithMember(String userId) async {
+    return await _authProvider.connectWithMember(userId);
   }
 
   /// Register a like swipe against [targetUserId].

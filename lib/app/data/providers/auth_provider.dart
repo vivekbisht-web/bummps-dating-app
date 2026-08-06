@@ -5,6 +5,7 @@ import '../../core/services/network/dio_client.dart';
 import '../models/login_response.dart';
 import '../models/user_profile.dart';
 import '../models/subscription_plan.dart';
+import '../models/circle_dashboard.dart';
 
 class AuthProvider {
   final DioClient _dioClient;
@@ -263,6 +264,139 @@ class AuthProvider {
       options: Options(
         extra: {'requiresAuth': false},
       ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Circle Endpoints
+  // ---------------------------------------------------------------------------
+
+  /// Fetch circle dashboard — GET /api/circle/dashboard
+  /// Returns events, trendingDiscussions, memberSpotlight, onlineCircleCount.
+  Future<CircleDashboard> getCircleDashboard() async {
+    return await _dioClient.get<CircleDashboard>(
+      AppConstants.circleDashboard,
+      fromJson: (json) {
+        // The API wraps the payload inside a "data" key:
+        // { "success": true, "data": { ... } }
+        final Map<String, dynamic> dataMap;
+        if (json is Map<String, dynamic> && json.containsKey('data')) {
+          dataMap = json['data'] as Map<String, dynamic>;
+        } else if (json is Map<String, dynamic>) {
+          dataMap = json;
+        } else if (json is String) {
+          final decoded = jsonDecode(json) as Map<String, dynamic>;
+          dataMap = decoded.containsKey('data')
+              ? decoded['data'] as Map<String, dynamic>
+              : decoded;
+        } else {
+          dataMap = {};
+        }
+        return CircleDashboard.fromJson(dataMap);
+      },
+    );
+  }
+
+  /// Fetch circle events — GET /api/circle/events
+  /// Returns { "success": true, "data": [ ... ] }
+  Future<List<CircleEvent>> getCircleEvents() async {
+    return await _dioClient.get<List<CircleEvent>>(
+      AppConstants.circleEvents,
+      fromJson: (json) {
+        List<dynamic>? list;
+        if (json is Map<String, dynamic> && json.containsKey('data') && json['data'] is List) {
+          list = json['data'] as List<dynamic>;
+        } else if (json is List) {
+          list = json;
+        } else if (json is String) {
+          final decoded = jsonDecode(json);
+          if (decoded is Map<String, dynamic> && decoded.containsKey('data') && decoded['data'] is List) {
+            list = decoded['data'] as List<dynamic>;
+          } else if (decoded is List) {
+            list = decoded;
+          }
+        }
+        if (list == null || list.isEmpty) return [];
+        return list
+            .whereType<Map<String, dynamic>>()
+            .map((e) => CircleEvent.fromJson(e))
+            .toList();
+      },
+    );
+  }
+
+  /// Create a circle discussion — POST /api/circle/discussions
+  /// Body: { category, title, subtitle, isNewTag }
+  /// Returns { "success": true, "data": { ... } }
+  Future<TrendingDiscussion> createDiscussion({
+    required String category,
+    required String title,
+    required String subtitle,
+    required bool isNewTag,
+  }) async {
+    return await _dioClient.post<TrendingDiscussion>(
+      AppConstants.circleDiscussions,
+      data: {
+        'category': category,
+        'title': title,
+        'subtitle': subtitle,
+        'isNewTag': isNewTag,
+      },
+      fromJson: (json) {
+        Map<String, dynamic> dataMap;
+        if (json is Map<String, dynamic> && json.containsKey('data') && json['data'] is Map) {
+          dataMap = json['data'] as Map<String, dynamic>;
+        } else if (json is Map<String, dynamic>) {
+          dataMap = json;
+        } else if (json is String) {
+          final decoded = jsonDecode(json) as Map<String, dynamic>;
+          dataMap = decoded.containsKey('data')
+              ? decoded['data'] as Map<String, dynamic>
+              : decoded;
+        } else {
+          dataMap = {};
+        }
+        return TrendingDiscussion.fromJson(dataMap);
+      },
+    );
+  }
+
+  /// Fetch all circle discussions — GET /api/circle/discussions
+  /// Returns { "success": true, "data": [ ... ] }
+  Future<List<TrendingDiscussion>> getCircleDiscussions() async {
+    return await _dioClient.get<List<TrendingDiscussion>>(
+      AppConstants.circleDiscussions,
+      fromJson: (json) {
+        List<dynamic>? list;
+        if (json is Map<String, dynamic> && json.containsKey('data') && json['data'] is List) {
+          list = json['data'] as List<dynamic>;
+        } else if (json is List) {
+          list = json;
+        } else if (json is String) {
+          final decoded = jsonDecode(json);
+          if (decoded is Map<String, dynamic> && decoded.containsKey('data') && decoded['data'] is List) {
+            list = decoded['data'] as List<dynamic>;
+          } else if (decoded is List) {
+            list = decoded;
+          }
+        }
+        if (list == null || list.isEmpty) return [];
+        return list
+            .whereType<Map<String, dynamic>>()
+            .map((e) => TrendingDiscussion.fromJson(e))
+            .toList();
+      },
+    );
+  }
+
+  /// Connect with a circle member — POST /api/circle/connect/:userId
+  Future<Map<String, dynamic>> connectWithMember(String userId) async {
+    return await _dioClient.post<Map<String, dynamic>>(
+      '${AppConstants.circleConnect}/$userId',
+      fromJson: (json) {
+        if (json is Map<String, dynamic>) return json;
+        return {};
+      },
     );
   }
 
