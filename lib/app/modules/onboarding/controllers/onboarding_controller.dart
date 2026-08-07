@@ -54,7 +54,7 @@ class OnboardingController extends GetxController {
 
   void onPageChanged(int index) => currentPage.value = index;
 
-  void getStarted() => Get.toNamed(Routes.register);
+  void getStarted() => Get.toNamed(Routes.signIn);
 
   void skip() => Get.toNamed(Routes.login);
 

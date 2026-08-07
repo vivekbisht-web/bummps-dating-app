@@ -14,7 +14,7 @@ class BummpsLogo extends StatelessWidget {
         children: [
           Image.asset(
             'assets/images/bummps-icon.png',
-            height: 52,
+            height: 62,
             fit: BoxFit.contain,
           ),
           // const SizedBox(width: 2),
@@ -22,7 +22,7 @@ class BummpsLogo extends StatelessWidget {
             offset: const Offset(0, 6),
             child: Image.asset(
               'assets/images/bummps..png',
-              height: 22,
+              height: 28,
               fit: BoxFit.contain,
             ),
           ),
