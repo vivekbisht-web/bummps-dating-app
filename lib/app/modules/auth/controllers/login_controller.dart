@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/services/network/dio_exception.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../../../core/utils/validators.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../routes/app_pages.dart';
@@ -25,7 +26,14 @@ class LoginController extends GetxController {
   void togglePasswordVisibility() => obscurePassword.toggle();
 
   Future<void> continueWithEmail() async {
-    if (!(formKey.currentState?.validate() ?? false)) return;
+    if (!(formKey.currentState?.validate() ?? false)) {
+      AppSnackbar.showWarning(
+        title: 'Form Incomplete',
+        message: 'Please fill in a valid email address and password.',
+      );
+      return;
+    }
+    
     isLoading.value = true;
     try {
       final response = await _authRepository.login(
@@ -33,27 +41,40 @@ class LoginController extends GetxController {
         password: passwordController.text,
       );
       
-      Get.snackbar(
-        'Success',
-        'Signed in as ${response.name}',
-        snackPosition: SnackPosition.BOTTOM,
+      AppSnackbar.showSuccess(
+        title: 'Welcome Back',
+        message: 'Successfully signed in as ${response.name}',
       );
 
-      // Route to profileSetup or home on successful authentication
+      // Route to home on successful authentication
       Get.offAllNamed(Routes.home);
     } on ApiException catch (e) {
-      Get.snackbar(
-        'Authentication Failed',
-        e.message,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      final msg = e.message.toLowerCase();
+      final isUserNotFound = e.statusCode == 404 ||
+          msg.contains('not found') ||
+          msg.contains('does not exist') ||
+          msg.contains('doesn\'t exist') ||
+          msg.contains('no user') ||
+          msg.contains('not registered') ||
+          msg.contains('unregistered');
+
+      if (isUserNotFound) {
+        AppSnackbar.showWarning(
+          title: 'Account Not Found',
+          message: 'No account exists with this email address. Please register first to get started.',
+        );
+      } else {
+        AppSnackbar.showError(
+          title: 'Authentication Failed',
+          message: e.message,
+        );
+      }
     } catch (e, stackTrace) {
       debugPrint('[LoginController] Unexpected error: $e');
       debugPrint('[LoginController] StackTrace: $stackTrace');
-      Get.snackbar(
-        'Error',
-        'An unexpected error occurred. Please try again.',
-        snackPosition: SnackPosition.BOTTOM,
+      AppSnackbar.showError(
+        title: 'Login Error',
+        message: 'An unexpected error occurred. Please check your connection and try again.',
       );
     } finally {
       isLoading.value = false;
@@ -61,12 +82,22 @@ class LoginController extends GetxController {
   }
 
   void forgotPassword() {
-    Get.snackbar('Bummps', 'Password reset flow coming soon');
+    AppSnackbar.showInfo(
+      title: 'Password Reset',
+      message: 'Password reset link will be sent to your email soon.',
+    );
   }
 
-  void continueWithGoogle() => Get.snackbar('Bummps', 'Google sign-in tapped');
+  void continueWithGoogle() => AppSnackbar.showInfo(
+        title: 'Social Sign-In',
+        message: 'Google sign-in will be active shortly.',
+      );
 
-  void continueWithApple() => Get.snackbar('Bummps', 'Apple sign-in tapped');
+  void continueWithApple() => AppSnackbar.showInfo(
+        title: 'Social Sign-In',
+        message: 'Apple sign-in will be active shortly.',
+      );
 
   void goToRegister() => Get.toNamed(Routes.register);
 }
+

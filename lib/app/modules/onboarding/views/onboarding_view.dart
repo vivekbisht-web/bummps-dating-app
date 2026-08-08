@@ -150,15 +150,15 @@ class _SkipButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
           decoration: BoxDecoration(
-            color: AppColors.gold,
+            color: AppColors.onGold,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
             'Skip',
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.onGold,
+              color: AppColors.textPrimary,
               fontWeight: FontWeight.w600,
             ),
           ),

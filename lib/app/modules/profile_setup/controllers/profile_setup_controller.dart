@@ -4,8 +4,10 @@ import 'package:get/get.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/services/network/dio_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../routes/app_pages.dart';
 
@@ -157,7 +159,10 @@ class ProfileSetupController extends GetxController {
     } else if (selectedInterests.length < maxInterests) {
       selectedInterests.add(value);
     } else {
-      Get.snackbar('Bummps', 'You can select up to $maxInterests interests');
+      AppSnackbar.showWarning(
+        title: 'Selection Limit',
+        message: 'You can select up to $maxInterests interests.',
+      );
     }
   }
 
@@ -214,10 +219,9 @@ class ProfileSetupController extends GetxController {
     latitude.value = 28.6139 + (DateTime.now().millisecond % 100) * 0.0001;
     longitude.value = 77.2090 + (DateTime.now().millisecond % 100) * 0.0001;
     locationController.text = 'New Delhi, India';
-    Get.snackbar(
-      'Location Detected',
-      'Coordinates: ${latitude.value.toStringAsFixed(4)}, ${longitude.value.toStringAsFixed(4)}',
-      snackPosition: SnackPosition.BOTTOM,
+    AppSnackbar.showInfo(
+      title: 'Location Detected',
+      message: 'Coordinates: ${latitude.value.toStringAsFixed(4)}, ${longitude.value.toStringAsFixed(4)}',
     );
   }
 
@@ -233,7 +237,10 @@ class ProfileSetupController extends GetxController {
         photos[index] = image.path;
       }
     } catch (e) {
-      Get.snackbar('Bummps', 'Failed to pick image: $e');
+      AppSnackbar.showError(
+        title: 'Photo Upload Error',
+        message: 'Failed to pick image: $e',
+      );
     }
   }
 
@@ -243,10 +250,16 @@ class ProfileSetupController extends GetxController {
 
   Future<void> startVerification() async {
     isVerifying.value = true;
-    Get.snackbar('Bummps', 'Launching selfie verification camera...');
+    AppSnackbar.showInfo(
+      title: 'Selfie Verification',
+      message: 'Launching selfie verification camera...',
+    );
     await Future.delayed(const Duration(seconds: 4));
     isVerifying.value = false;
-    Get.snackbar('Bummps', 'Verification successful! Welcome.');
+    AppSnackbar.showSuccess(
+      title: 'Verification Complete',
+      message: 'Verification successful! Welcome to Bummps.',
+    );
     await Future.delayed(const Duration(milliseconds: 500));
     next();
   }
@@ -405,13 +418,17 @@ class ProfileSetupController extends GetxController {
 
       await authRepository.register(formData: formData);
       return true;
-    } catch (e) {
-      Get.snackbar(
-        'Registration Failed',
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.1),
-        colorText: Colors.white,
+    } on ApiException catch (e) {
+      AppSnackbar.showError(
+        title: 'Registration Failed',
+        message: e.message,
+      );
+      return false;
+    } catch (e, stackTrace) {
+      debugPrint('[ProfileSetupController] Registration error: $e\n$stackTrace');
+      AppSnackbar.showError(
+        title: 'Registration Error',
+        message: 'An unexpected error occurred during profile setup. Please try again.',
       );
       return false;
     } finally {
@@ -443,14 +460,6 @@ class ProfileSetupController extends GetxController {
   @override
   void onClose() {
     pageController.dispose();
-    firstNameController.dispose();
-    dobController.dispose();
-    locationController.dispose();
-    bioController.dispose();
-    heightController.dispose();
-    educationController.dispose();
-    jobTitleController.dispose();
-    companyController.dispose();
     super.onClose();
   }
 }

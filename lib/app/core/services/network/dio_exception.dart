@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 
 class ApiException implements Exception {
@@ -18,10 +19,10 @@ class ApiException implements Exception {
         message = 'Connection timeout. Please check your internet connection.';
         break;
       case DioExceptionType.sendTimeout:
-        message = 'Send timeout in association with server.';
+        message = 'Send timeout while communicating with server.';
         break;
       case DioExceptionType.receiveTimeout:
-        message = 'Receive timeout in connection with server.';
+        message = 'Receive timeout while receiving data from server.';
         break;
       case DioExceptionType.badResponse:
         message = _handleErrorResponse(dioException.response);
@@ -48,23 +49,64 @@ class ApiException implements Exception {
       return 'Received invalid response from server.';
     }
 
-    final data = response.data;
+    int? statusCode = response.statusCode;
+    dynamic data = response.data;
+
+    // Decode String response data if server returned raw JSON string
+    if (data is String && data.trim().startsWith('{')) {
+      try {
+        data = jsonDecode(data);
+      } catch (_) {}
+    }
+
     if (data is Map<String, dynamic>) {
-      // Check common API error formats
-      if (data.containsKey('message')) {
-        return data['message'].toString();
-      } else if (data.containsKey('error')) {
-        return data['error'].toString();
-      } else if (data.containsKey('errors')) {
+      if (data.containsKey('message') && data['message'] != null) {
+        final msg = data['message'];
+        if (msg is List) {
+          return msg.map((e) => e.toString()).join('\n');
+        }
+        return msg.toString();
+      } else if (data.containsKey('error') && data['error'] != null) {
+        final err = data['error'];
+        if (err is Map && err.containsKey('message')) {
+          return err['message'].toString();
+        }
+        return err.toString();
+      } else if (data.containsKey('errors') && data['errors'] != null) {
         final errors = data['errors'];
         if (errors is Map) {
           return errors.values.map((e) => e.toString()).join('\n');
         } else if (errors is List) {
-          return errors.join('\n');
+          return errors.map((e) => e.toString()).join('\n');
         }
+      } else if (data.containsKey('msg') && data['msg'] != null) {
+        return data['msg'].toString();
+      } else if (data.containsKey('detail') && data['detail'] != null) {
+        return data['detail'].toString();
       }
     }
-    
-    return 'Server returned error: ${response.statusCode}';
+
+    // Status code fallback messages for production readiness
+    switch (statusCode) {
+      case 400:
+        return 'Invalid request data. Please check your inputs and try again.';
+      case 401:
+        return 'Invalid email or password. Please verify your credentials.';
+      case 403:
+        return 'Access denied. You do not have permission to perform this action.';
+      case 404:
+        return 'Account not found. Please register first to create your Bummps account.';
+      case 409:
+        return 'An account with this email address already exists.';
+      case 422:
+        return 'Validation failed. Please verify your profile and account details.';
+      case 500:
+      case 502:
+      case 503:
+        return 'Server error. Our team has been notified, please try again shortly.';
+      default:
+        return 'Server returned error (${statusCode ?? 'Unknown'})';
+    }
   }
 }
+

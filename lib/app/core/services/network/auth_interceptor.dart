@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:get/get.dart' as get_x;
 import '../../../routes/app_pages.dart';
 import '../../constants/app_constants.dart';
+import '../../utils/app_snackbar.dart';
 import '../storage/secure_storage_service.dart';
 
 class AuthInterceptor extends QueuedInterceptor {
@@ -35,8 +36,10 @@ class AuthInterceptor extends QueuedInterceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
-    // Check for 401 Unauthorized errors
-    if (err.response?.statusCode == 401) {
+    final requiresAuth = err.requestOptions.extra['requiresAuth'] ?? true;
+
+    // Check for 401 Unauthorized errors ONLY for protected endpoints requiring auth
+    if (requiresAuth && err.response?.statusCode == 401) {
       final refreshToken = await _storageService.getRefreshToken();
       
       if (refreshToken != null && refreshToken.isNotEmpty) {
@@ -44,7 +47,6 @@ class AuthInterceptor extends QueuedInterceptor {
           debugPrint('[AuthInterceptor] Token expired. Attempting token refresh...');
           
           // Trigger refresh token API call
-          // TODO: Replace with your actual backend token refresh endpoint and key parameters
           final response = await _refreshDio.post(
             'auth/refresh',
             data: {'refreshToken': refreshToken},
@@ -109,20 +111,16 @@ class AuthInterceptor extends QueuedInterceptor {
     debugPrint('[AuthInterceptor] Logging out due to unauthorized response.');
     await _storageService.clearAll();
     
-    _showGlobalError('Session Expired', 'Please log in again.');
-    
-    // Redirect to Login page using GetX
-    get_x.Get.offAllNamed(Routes.login);
+    if (get_x.Get.currentRoute != Routes.login && get_x.Get.currentRoute != Routes.register) {
+      _showGlobalError('Session Expired', 'Please log in again.');
+      get_x.Get.offAllNamed(Routes.login);
+    }
   }
 
   void _showGlobalError(String title, String message) {
-    if (get_x.Get.isSnackbarOpen) return;
-    
-    get_x.Get.snackbar(
-      title,
-      message,
-      snackPosition: get_x.SnackPosition.BOTTOM,
-      duration: const Duration(seconds: 4),
+    AppSnackbar.showError(
+      title: title,
+      message: message,
     );
   }
 }

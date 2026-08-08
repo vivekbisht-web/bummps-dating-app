@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import '../../../routes/app_pages.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../../../core/services/storage/secure_storage_service.dart';
 import '../../../core/services/socket/socket_service.dart';
 import '../../../data/repositories/auth_repository.dart';
@@ -256,23 +257,15 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
       final authRepo = Get.find<AuthRepository>();
       final result = await authRepo.connectWithMember(userId);
       debugPrint('[HomeController] Connect with member result: $result');
-      Get.snackbar(
-        'Connection Sent',
-        'Your connection request has been sent!',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColors.gold,
-        colorText: Colors.black,
-        duration: const Duration(seconds: 2),
+      AppSnackbar.showSuccess(
+        title: 'Connection Sent',
+        message: 'Your connection request has been sent!',
       );
     } catch (e) {
       debugPrint('[HomeController] Error connecting with member: $e');
-      Get.snackbar(
-        'Error',
-        'Failed to send connection request',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 2),
+      AppSnackbar.showError(
+        title: 'Connection Failed',
+        message: 'Failed to send connection request. Please try again.',
       );
     } finally {
       isConnecting.value = false;
@@ -380,12 +373,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
       profiles.addAll(filtered.map(_mapToCard));
     } catch (e) {
       debugPrint('[HomeController] Error applying filter: $e');
-      Get.snackbar(
-        'Filter Error',
-        'Could not apply filters. Please try again.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColors.surface,
-        colorText: AppColors.textPrimary,
+      AppSnackbar.showError(
+        title: 'Filter Error',
+        message: 'Could not apply filters. Please try again.',
       );
     } finally {
       isLoadingFeed.value = false;
@@ -594,12 +584,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
       debugPrint('[HomeController] Purchase subscription response: $response');
       
       if (response['success'] == true) {
-        Get.snackbar(
-          'Success',
-          'Successfully subscribed to plan!',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: AppColors.success.withOpacity(0.9),
-          colorText: Colors.white,
+        AppSnackbar.showSuccess(
+          title: 'Subscription Active',
+          message: 'Successfully subscribed to plan!',
         );
         // Refresh subscription state
         await fetchUserSubscription();
@@ -607,23 +594,17 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
         await loadWhoLikedMeProfiles();
         return true;
       } else {
-        Get.snackbar(
-          'Subscription Failed',
-          response['message']?.toString() ?? 'Failed to subscribe. Please try again.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: AppColors.surface,
-          colorText: AppColors.textPrimary,
+        AppSnackbar.showError(
+          title: 'Subscription Failed',
+          message: response['message']?.toString() ?? 'Failed to subscribe. Please try again.',
         );
         return false;
       }
     } catch (e) {
       debugPrint('[HomeController] Error subscribing: $e');
-      Get.snackbar(
-        'Subscription Error',
-        'An error occurred: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColors.surface,
-        colorText: AppColors.textPrimary,
+      AppSnackbar.showError(
+        title: 'Subscription Error',
+        message: 'An error occurred while subscribing: $e',
       );
       return false;
     } finally {
@@ -909,14 +890,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     isBoostActive.value = true;
     boostTimeLeft.value = 1800; // 30 minutes in seconds
 
-    Get.snackbar(
-      'PROFILE BOOSTED',
-      'Your profile is now in the spotlight for 30 minutes.',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: AppColors.gold,
-      colorText: AppColors.onGold,
-      duration: const Duration(seconds: 4),
-      icon: const Icon(Icons.flash_on, color: AppColors.onGold),
+    AppSnackbar.showSuccess(
+      title: 'PROFILE BOOSTED',
+      message: 'Your profile is now in the spotlight for 30 minutes.',
     );
 
     // Start a simulated timer
@@ -1231,12 +1207,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
       );
     } catch (e) {
       debugPrint('[HomeController] Error sending Socket message: $e');
-      Get.snackbar(
-        'Send Error',
-        'Failed to send message via socket. Please try again.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColors.surface,
-        colorText: AppColors.textPrimary,
+      AppSnackbar.showError(
+        title: 'Send Error',
+        message: 'Failed to send message. Please try again.',
       );
     }
 

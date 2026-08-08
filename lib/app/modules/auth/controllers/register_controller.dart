@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../core/utils/app_snackbar.dart';
 import '../../../core/utils/validators.dart';
 import '../../../routes/app_pages.dart';
 
@@ -21,7 +22,14 @@ class RegisterController extends GetxController {
   void togglePasswordVisibility() => obscurePassword.toggle();
 
   Future<void> createAccount() async {
-    if (!(formKey.currentState?.validate() ?? false)) return;
+    if (!(formKey.currentState?.validate() ?? false)) {
+      AppSnackbar.showWarning(
+        title: 'Form Incomplete',
+        message: 'Please complete all required registration fields correctly.',
+      );
+      return;
+    }
+    
     Get.toNamed(
       Routes.profileSetup,
       arguments: {
@@ -32,9 +40,15 @@ class RegisterController extends GetxController {
     );
   }
 
-  void continueWithGoogle() => Get.snackbar('Bummps', 'Google sign-up tapped');
+  void continueWithGoogle() => AppSnackbar.showInfo(
+        title: 'Social Registration',
+        message: 'Google registration will be active shortly.',
+      );
 
-  void continueWithApple() => Get.snackbar('Bummps', 'Apple sign-up tapped');
+  void continueWithApple() => AppSnackbar.showInfo(
+        title: 'Social Registration',
+        message: 'Apple registration will be active shortly.',
+      );
 
   void goToLogin() {
     if (Get.previousRoute == Routes.login) {
@@ -44,3 +58,4 @@ class RegisterController extends GetxController {
     }
   }
 }
+

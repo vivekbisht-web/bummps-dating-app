@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/utils/app_snackbar.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../controllers/profile_setup_controller.dart';
 
@@ -62,7 +63,10 @@ class PhotosStep extends StatelessWidget {
           const SizedBox(height: 20),
           GestureDetector(
             onTap: () {
-              Get.snackbar('Bummps', 'Quality guidelines coming soon');
+              AppSnackbar.showInfo(
+                title: 'Quality Guidelines',
+                message: 'Upload clear, high-resolution photos that showcase your genuine personality.',
+              );
             },
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
