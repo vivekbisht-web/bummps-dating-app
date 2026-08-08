@@ -1016,21 +1016,39 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
                 height: 150,
                 child: Stack(
                   children: [
-                    // Left image (Self dummy - using onboarding image or placeholder)
+                    // Left image (current user's real profile pic)
                     Positioned(
                       left: 10,
-                      child: Container(
-                        width: 130,
-                        height: 130,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.gold, width: 3),
-                          image: const DecorationImage(
-                            image: NetworkImage('https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80'),
-                            fit: BoxFit.cover,
+                      child: Builder(builder: (context) {
+                        // Resolve current user's profile pic URL
+                        String selfPicUrl = '';
+                        final selfPic = currentUserProfile.value?.profilePic ?? '';
+                        if (selfPic.isNotEmpty) {
+                          if (selfPic.startsWith('http')) {
+                            selfPicUrl = selfPic;
+                          } else {
+                            selfPicUrl = selfPic.startsWith('/')
+                                ? 'https://datingapp-oz22.onrender.com$selfPic'
+                                : 'https://datingapp-oz22.onrender.com/$selfPic';
+                          }
+                        }
+                        const String fallbackUrl = 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80';
+                        final ImageProvider selfImage = selfPicUrl.isNotEmpty
+                            ? NetworkImage(selfPicUrl) as ImageProvider
+                            : const NetworkImage(fallbackUrl);
+                        return Container(
+                          width: 130,
+                          height: 130,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppColors.gold, width: 3),
+                            image: DecorationImage(
+                              image: selfImage,
+                              fit: BoxFit.cover,
+                            ),
                           ),
-                        ),
-                      ),
+                        );
+                      }),
                     ),
                     // Right image (Matched profile)
                     Positioned(

@@ -6,8 +6,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../routes/app_pages.dart';
 
-/// Sign-in gateway screen shown right after the onboarding carousel.
-/// Users choose a social provider (Facebook, Apple, Google) or phone.
 class SignInView extends StatelessWidget {
   const SignInView({super.key});
 
