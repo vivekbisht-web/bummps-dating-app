@@ -98,6 +98,7 @@ class ProfileSetupController extends GetxController {
 
   // --- Step 4: verification ---
   final RxBool isVerifying = false.obs;
+  final RxBool wasVerified = false.obs;
 
   double get progress => (currentStep.value + 1) / totalSteps;
   int get percent => (progress * 100).round();
@@ -139,6 +140,10 @@ class ProfileSetupController extends GetxController {
       registerName = args['name'] ?? '';
       registerEmail = args['email'] ?? '';
       registerPassword = args['password'] ?? '';
+      // Pre-fill the first name field from the registration screen
+      if (registerName.isNotEmpty) {
+        firstNameController.text = registerName;
+      }
     }
   }
 
@@ -250,25 +255,81 @@ class ProfileSetupController extends GetxController {
 
   Future<void> startVerification() async {
     isVerifying.value = true;
+    wasVerified.value = false;
     AppSnackbar.showInfo(
       title: 'Selfie Verification',
       message: 'Launching selfie verification camera...',
     );
-    await Future.delayed(const Duration(seconds: 4));
-    isVerifying.value = false;
+    
+    // Wait for the simulated face scan to complete (4.2 seconds total scan time)
+    await Future.delayed(const Duration(milliseconds: 4200));
+    
+    wasVerified.value = true;
     AppSnackbar.showSuccess(
       title: 'Verification Complete',
       message: 'Verification successful! Welcome to Bummps.',
     );
+    
+    // Let the user see the success checkmark on the scanner screen for 1.8 seconds
+    await Future.delayed(const Duration(milliseconds: 1800));
+    
+    isVerifying.value = false;
     await Future.delayed(const Duration(milliseconds: 500));
     next();
   }
 
   void doThisLaterVerification() {
+    wasVerified.value = false;
     next();
   }
 
+  /// Validates required fields for the given step index.
+  /// Returns null if valid, or an error message to show the user.
+  String? _validateStep(int step) {
+    switch (step) {
+      case 0: // Basic Info — Name, DOB, Location are required
+        if (firstNameController.text.trim().isEmpty) {
+          return 'Please enter your first name to continue.';
+        }
+        if (dobController.text.trim().isEmpty) {
+          return 'Please select your date of birth to continue.';
+        }
+        if (locationController.text.trim().isEmpty) {
+          return 'Please enter your current location to continue.';
+        }
+        return null;
+
+      case 1: // About You — Only Gender and Interested In are required
+        if (gender.value == null) {
+          return 'Please select your gender to continue.';
+        }
+        if (interestedIn.value == null) {
+          return 'Please select who you are interested in to continue.';
+        }
+        return null;
+
+      case 2: // Photos — At least a primary photo is required
+        if (photos[0] == null || photos[0]!.isEmpty) {
+          return 'Please add at least one profile photo to continue.';
+        }
+        return null;
+
+      default:
+        return null;
+    }
+  }
+
   void next() async {
+    // Validate the current step before advancing
+    final validationError = _validateStep(currentStep.value);
+    if (validationError != null) {
+      AppSnackbar.showWarning(
+        title: 'Required Fields Missing',
+        message: validationError,
+      );
+      return;
+    }
+
     if (currentStep.value < implementedSteps - 1) {
       currentStep.value++;
       _animateTo(currentStep.value);
@@ -337,15 +398,14 @@ class ProfileSetupController extends GetxController {
 
       // Build fields Map — all keys must match the API exactly
       final Map<String, dynamic> data = {
-        'name': registerName.isNotEmpty
-            ? registerName
-            : (firstNameController.text.trim().isNotEmpty
-                ? firstNameController.text.trim()
-                : 'Alex Johnson'),
+        'name': firstNameController.text.trim().isNotEmpty
+            ? firstNameController.text.trim()
+            : (registerName.isNotEmpty ? registerName : 'Alex Johnson'),
         'email': registerEmail.isNotEmpty ? registerEmail : 'alex@example.com',
         'password': registerPassword.isNotEmpty ? registerPassword : 'password123',
         'gender': _mapGender(gender.value),
         'interestedIn': _mapGender(interestedIn.value),
+        'isVerified': wasVerified.value.toString(),
         'age': age.toString(),
         'bio': bioController.text.trim().isNotEmpty
             ? bioController.text.trim()
