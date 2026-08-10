@@ -141,6 +141,11 @@ class AuthRepository {
     return await _authProvider.superLikeUser(targetUserId);
   }
 
+  //boost api
+  Future<Map<String, dynamic>> boostProfile () async {
+    return _authProvider.boostProfile();
+  }
+
   /// Register a pass (X/nope) swipe against [targetUserId].
   Future<Map<String, dynamic>> passUser(String targetUserId) async {
     return await _authProvider.passUser(targetUserId);

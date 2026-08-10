@@ -89,6 +89,9 @@ class HelpSupportController extends GetxController {
         message: messageController.text.trim(),
       );
 
+      // Return to previous screen
+      Get.back();
+
       AppSnackbar.showSuccess(
         title: 'Ticket Submitted',
         message: 'Your ticket has been sent. Our team will get back to you shortly.',
@@ -97,9 +100,6 @@ class HelpSupportController extends GetxController {
       // Clear inputs
       subjectController.clear();
       messageController.clear();
-
-      // Return to previous screen
-      Get.back();
     } catch (e) {
       String errorMessage = 'Something went wrong. Please try again.';
       if (e is DioException) {

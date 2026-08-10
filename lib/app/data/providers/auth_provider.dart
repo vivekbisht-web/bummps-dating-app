@@ -201,6 +201,16 @@ class AuthProvider {
     );
   }
 
+  Future<Map<String, dynamic>> boostProfile() async{
+    return await _dioClient.post<Map<String, dynamic>>(
+      AppConstants.boost,
+        fromJson: (json) {
+          if (json is Map<String, dynamic>) return json;
+          return{};
+        }
+    );
+  }
+
   /// Send a pass (X/nope) action — POST /api/matches/pass  { "targetUserId": id }
   Future<Map<String, dynamic>> passUser(String targetUserId) async {
     return await _dioClient.post<Map<String, dynamic>>(

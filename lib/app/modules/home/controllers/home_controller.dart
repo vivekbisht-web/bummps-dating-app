@@ -884,20 +884,30 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     }
   }
 
-  void triggerBoost() {
+  void triggerBoost() async {
     if (isBoostActive.value) return;
 
-    isBoostActive.value = true;
-    boostTimeLeft.value = 1800; // 30 minutes in seconds
+    try {
+      final authRepo = Get.find<AuthRepository>();
 
-    AppSnackbar.showSuccess(
-      title: 'PROFILE BOOSTED',
-      message: 'Your profile is now in the spotlight for 30 minutes.',
-    );
+      await authRepo.boostProfile();
+      isBoostActive.value = true;
+      boostTimeLeft.value = 1800;
+      
+      AppSnackbar.showSuccess(
+          title: 'PROFILE BOOSTED',
+          message: 'Your profile is now in the spotlight for 30 minutes.');
 
-    // Start a simulated timer
-    _runBoostTimer();
+      _runBoostTimer();
+    } catch (e) {
+      debugPrint('[HomeController] Boost error: $e');
+      AppSnackbar.showError(
+        title: 'Boost Failed',
+        message: 'No boosts available Try again later',
+      );
+    }
   }
+
 
   void _runBoostTimer() async {
     while (boostTimeLeft.value > 0 && isBoostActive.value) {
