@@ -13,6 +13,7 @@ abstract class Routes {
   static const chatDetail = _Paths.chatDetail;
   static const likedHistory = _Paths.likedHistory;
   static const plans = _Paths.plans;
+  static const helpSupport = _Paths.helpSupport;
 }
 
 abstract class _Paths {
@@ -27,4 +28,5 @@ abstract class _Paths {
   static const chatDetail = '/chat-detail';
   static const likedHistory = '/liked-history';
   static const plans = '/plans';
+  static const helpSupport = '/help-support';
 }

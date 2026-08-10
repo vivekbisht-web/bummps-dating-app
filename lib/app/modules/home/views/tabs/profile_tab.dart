@@ -202,7 +202,7 @@ class ProfileTab extends GetView<HomeController> {
                     _buildSettingsRow(
                       icon: Icons.help_outline,
                       title: 'Help & Support',
-                      onTap: () {},
+                      onTap: () => Get.toNamed(Routes.helpSupport),
                       showDivider: false,
                     ),
                   ],

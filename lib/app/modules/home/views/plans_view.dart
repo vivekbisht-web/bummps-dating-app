@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../routes/app_pages.dart';
 import '../controllers/home_controller.dart';
 
 class PlansView extends StatefulWidget {
@@ -438,7 +439,17 @@ class _PlansViewState extends State<PlansView> {
                 children: [
                   _buildFooterLink('RESTORE PURCHASE'),
                   _buildFooterSpacer(),
-                  _buildFooterLink('TERMS OF SERVICE'),
+                  _buildFooterLink(
+                    'BILLING SUPPORT',
+                    onTap: () => Get.toNamed(
+                      Routes.helpSupport,
+                      arguments: {
+                        'subject': 'Payment Issue',
+                        'category': 'Billing',
+                        'message': 'I was charged for Gold subscription but it is not active.',
+                      },
+                    ),
+                  ),
                   _buildFooterSpacer(),
                   _buildFooterLink('PRIVACY POLICY'),
                 ],
@@ -548,9 +559,9 @@ class _PlansViewState extends State<PlansView> {
     );
   }
 
-  Widget _buildFooterLink(String text) {
+  Widget _buildFooterLink(String text, {VoidCallback? onTap}) {
     return GestureDetector(
-      onTap: () {},
+      onTap: onTap ?? () {},
       child: Text(
         text,
         style: const TextStyle(

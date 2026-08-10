@@ -8,6 +8,7 @@ import '../../../data/repositories/auth_repository.dart';
 import '../../../data/providers/chat_provider.dart';
 import '../../../data/repositories/chat_repository.dart';
 import '../controllers/home_controller.dart';
+import '../controllers/help_support_controller.dart';
 
 /// Provides dependency injection for the home screen flow.
 class HomeBinding extends Bindings {
@@ -34,5 +35,6 @@ class HomeBinding extends Bindings {
 
     Get.lazyPut<SocketService>(() => SocketService(), fenix: true);
     Get.lazyPut<HomeController>(() => HomeController());
+    Get.lazyPut<HelpSupportController>(() => HelpSupportController(), fenix: true);
   }
 }

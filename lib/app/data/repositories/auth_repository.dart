@@ -151,6 +151,19 @@ class AuthRepository {
     return await _authProvider.rewindSwipe(targetUserId);
   }
 
+  /// Submit support request: POST /api/auth/help-support
+  Future<Map<String, dynamic>> submitHelpSupport({
+    required String subject,
+    required String category,
+    required String message,
+  }) async {
+    return await _authProvider.submitHelpSupport(
+      subject: subject,
+      category: category,
+      message: message,
+    );
+  }
+
   Future<LoginResponse> login({
     required String email,
     required String password,

@@ -7,6 +7,7 @@ class AppConstants {
   static const String login = 'auth/login';
   static const String register = 'auth/register';
   static const String profile = 'auth/profile';
+  static const String helpSupport = 'auth/help-support';
 
   // Matches Endpoints
   static const String feed = 'matches/feed';

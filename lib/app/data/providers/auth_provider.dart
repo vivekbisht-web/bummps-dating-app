@@ -249,6 +249,31 @@ class AuthProvider {
     );
   }
 
+  /// Submit support request: POST /api/auth/help-support
+  Future<Map<String, dynamic>> submitHelpSupport({
+    required String subject,
+    required String category,
+    required String message,
+  }) async {
+    return await _dioClient.post<Map<String, dynamic>>(
+      AppConstants.helpSupport,
+      data: {
+        'subject': subject,
+        'category': category,
+        'message': message,
+      },
+      fromJson: (json) {
+        if (json is Map<String, dynamic>) return json;
+        if (json is String) {
+          try {
+            return jsonDecode(json) as Map<String, dynamic>;
+          } catch (_) {}
+        }
+        return {};
+      },
+    );
+  }
+
   Future<LoginResponse> register({
     required FormData formData,
   }) async {

@@ -13,6 +13,7 @@ import '../modules/profile_setup/views/profile_setup_view.dart';
 import '../modules/home/views/chat_detail_view.dart';
 import '../modules/home/views/liked_history_view.dart';
 import '../modules/home/views/plans_view.dart';
+import '../modules/home/views/help_support_view.dart';
 
 part 'app_routes.dart';
 
@@ -72,6 +73,11 @@ class AppPages {
     GetPage(
       name: _Paths.plans,
       page: () => const PlansView(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: _Paths.helpSupport,
+      page: () => const HelpSupportView(),
       transition: Transition.rightToLeft,
     ),
   ];
