@@ -146,6 +146,11 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   final RxBool isLoadingPlans = false.obs;
   final RxBool isSubmittingSubscription = false.obs;
 
+  // Circle Dashboard state
+  final Rxn<CircleDashboard> circleDashboard = Rxn<CircleDashboard>();
+  final RxBool isLoadingDashboard = false.obs;
+  final RxInt circleSubTab = 0.obs; // 0: Dashboard, 1: Discussions, 2: Events
+
   // Circle Events state
   final RxList<CircleEvent> circleEvents = <CircleEvent>[].obs;
   final RxBool isLoadingCircleEvents = false.obs;
@@ -189,9 +194,24 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     _loadLikesYouList();
     _loadMatchesFromApi();
     loadWhoLikedMeProfiles();
+    fetchCircleDashboard();
     fetchCircleEvents();
     fetchCircleDiscussions();
     _initSocketService();
+  }
+
+  /// Fetch circle dashboard from GET /api/circle/dashboard
+  Future<void> fetchCircleDashboard() async {
+    try {
+      isLoadingDashboard.value = true;
+      final authRepo = Get.find<AuthRepository>();
+      final dashboard = await authRepo.getCircleDashboard();
+      circleDashboard.value = dashboard;
+    } catch (e) {
+      debugPrint('[HomeController] Error fetching circle dashboard: $e');
+    } finally {
+      isLoadingDashboard.value = false;
+    }
   }
 
   /// Fetch circle events from GET /api/circle/events
@@ -239,10 +259,25 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
         subtitle: subtitle,
         isNewTag: isNewTag,
       );
-      // Refresh the list after successful creation
-      await fetchCircleDiscussions();
+      AppSnackbar.showSuccess(
+        title: 'Discussion Published',
+        message: 'Your discussion topic has been published successfully.',
+      );
+      // Close modal sheet if open
+      if (Get.isBottomSheetOpen == true || Get.isDialogOpen == true) {
+        Get.back();
+      }
+      // Refresh lists after successful creation
+      await Future.wait([
+        fetchCircleDiscussions(),
+        fetchCircleDashboard(),
+      ]);
     } catch (e) {
       debugPrint('[HomeController] Error creating discussion: $e');
+      AppSnackbar.showError(
+        title: 'Publishing Failed',
+        message: 'Could not publish discussion. Please try again.',
+      );
     } finally {
       isSubmittingDiscussion.value = false;
     }
@@ -251,16 +286,42 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   /// Connect with a circle member — POST /api/circle/connect/:userId
   final RxBool isConnecting = false.obs;
 
-  Future<void> connectWithMember(String userId) async {
+  Future<void> connectWithMember(String userId, {MemberSpotlight? spotlight}) async {
     try {
       isConnecting.value = true;
       final authRepo = Get.find<AuthRepository>();
       final result = await authRepo.connectWithMember(userId);
       debugPrint('[HomeController] Connect with member result: $result');
-      AppSnackbar.showSuccess(
-        title: 'Connection Sent',
-        message: 'Your connection request has been sent!',
-      );
+
+      final bool isMatch = result['isMatch'] == true ||
+          result['matched'] == true ||
+          (result['data'] is Map && result['data']['isMatch'] == true) ||
+          (result['data'] is Map && result['data']['matched'] == true);
+
+      if (isMatch) {
+        final spotlightCard = ProfileCardData(
+          id: spotlight?.id ?? userId,
+          name: spotlight?.name.isNotEmpty == true ? spotlight!.name : 'Spotlight Member',
+          age: 28,
+          job: spotlight?.role.isNotEmpty == true ? spotlight!.role : 'Member',
+          distance: 'Nearby',
+          bio: spotlight?.quote ?? '',
+          matchScore: '99',
+          imageUrl: spotlight?.profilePic ?? '',
+          location: 'Circle',
+          height: '',
+          education: '',
+          languages: 'EN',
+          interests: [],
+          lifestyle: [],
+        );
+        _triggerMatchDialog(spotlightCard);
+      } else {
+        AppSnackbar.showSuccess(
+          title: 'Connection Request Sent',
+          message: 'Your connection request has been sent!',
+        );
+      }
     } catch (e) {
       debugPrint('[HomeController] Error connecting with member: $e');
       AppSnackbar.showError(
