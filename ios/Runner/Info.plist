@@ -66,5 +66,24 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app requires access to your photo library to select and upload profile pictures.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app requires access to your camera to take profile photos.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app requires access to your microphone when recording media.</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>https</string>
+		<string>http</string>
+		<string>tel</string>
+		<string>mailto</string>
+		<string>sms</string>
+	</array>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 </dict>
 </plist>

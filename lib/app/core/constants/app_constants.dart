@@ -23,9 +23,9 @@ class AppConstants {
   static const String boost = 'matches/boost';
 
   // Plans Endpoints
-  static const String allPlans = 'plans/allplans';
+  static const String allPlans = 'plans';
   static const String subscribe = 'plans/subscribe';
-  static const String mySubscription = 'plans/my-subscription';
+  static const String mySubscription = 'plans/subscription';
 
   // Circle Endpoints
   static const String circleDashboard = 'circle/dashboard';

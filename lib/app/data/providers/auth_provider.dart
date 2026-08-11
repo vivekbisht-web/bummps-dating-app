@@ -113,6 +113,9 @@ class AuthProvider {
         'page': page,
         'limit': limit,
       },
+      options: Options(
+        extra: {'suppressGlobalError': true},
+      ),
       fromJson: (json) => json,
     );
   }
@@ -121,11 +124,14 @@ class AuthProvider {
   Future<dynamic> checkWhoLikedMe() async {
     return await _dioClient.get<dynamic>(
       AppConstants.whoLikedMe,
+      options: Options(
+        extra: {'suppressGlobalError': true},
+      ),
       fromJson: (json) => json,
     );
   }
 
-  /// Get all subscription plans: GET /api/plans/allplans
+  /// Get all subscription plans: GET /api/plans
   Future<List<SubscriptionPlan>> getAllPlans() async {
     return await _dioClient.get<List<SubscriptionPlan>>(
       AppConstants.allPlans,
@@ -163,10 +169,13 @@ class AuthProvider {
     );
   }
 
-  /// Fetch user active subscription: GET /api/plans/my-subscription
+  /// Fetch user active subscription: GET /api/plans/subscription
   Future<UserSubscription> getMySubscription() async {
     return await _dioClient.get<UserSubscription>(
       AppConstants.mySubscription,
+      options: Options(
+        extra: {'suppressGlobalError': true},
+      ),
       fromJson: (json) {
         if (json is Map<String, dynamic>) {
           return UserSubscription.fromJson(json);

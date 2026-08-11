@@ -97,10 +97,14 @@ class AuthInterceptor extends QueuedInterceptor {
     // Global handling for other status codes: 403 Forbidden, 500 Server Error
     if (err.response != null) {
       final statusCode = err.response!.statusCode;
-      if (statusCode == 403) {
-        _showGlobalError('Access Denied', 'You do not have permission to access this resource.');
-      } else if (statusCode != null && statusCode >= 500) {
-        _showGlobalError('Server Error', 'Our servers are currently experiencing issues. Please try again later.');
+      final bool suppressGlobalError = err.requestOptions.extra['suppressGlobalError'] == true;
+
+      if (!suppressGlobalError) {
+        if (statusCode == 403) {
+          _showGlobalError('Access Denied', 'You do not have permission to access this resource.');
+        } else if (statusCode != null && statusCode >= 500) {
+          _showGlobalError('Server Error', 'Our servers are currently experiencing issues. Please try again later.');
+        }
       }
     }
 
