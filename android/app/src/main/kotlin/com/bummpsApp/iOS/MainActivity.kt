@@ -1,4 +1,4 @@
-package com.example.bummps
+package com.bummpsApp.iOS
 
 import io.flutter.embedding.android.FlutterActivity
 
