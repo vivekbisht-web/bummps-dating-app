@@ -34,16 +34,19 @@ class OnboardingView extends GetView<OnboardingController> {
           // Logo + Skip row at the top.
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
-              child: SizedBox(
-                height: 60,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const BummpsLogo(compact: true),
-                    _SkipButton(onTap: controller.skip),
-                  ],
-                ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Stack(
+                alignment: Alignment.topCenter,
+                children: [
+                  const BummpsLogo(compact: false),
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: _SkipButton(onTap: controller.skip),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -152,14 +155,16 @@ class _SkipButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
           decoration: BoxDecoration(
-            color: AppColors.onGold,
+            color: Colors.transparent,
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.gold, width: 1.2),
           ),
           child: Text(
             'Skip',
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textPrimary,
+              color: AppColors.gold,
               fontWeight: FontWeight.w600,
+              fontSize: 13,
             ),
           ),
         ),
