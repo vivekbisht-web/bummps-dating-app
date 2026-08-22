@@ -147,19 +147,19 @@ class _LogoBlock extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Image.asset(
-          'assets/images/bummps-icon.png',
-          height: 250,
+          'assets/images/bummps-singin-view-icon.png',
+          height: 270,
           errorBuilder: (_, __, ___) => const Icon(
             Icons.favorite,
             color: AppColors.gold,
-            size: 90,
+            size: 120,
           ),
         ),
-        const SizedBox(height: 1),
+        const SizedBox(height: 6),
 
         Image.asset(
           'assets/images/bummps..png',
-          height: 36,
+          height: 44,
           errorBuilder: (_, __, ___) => Text(
             'bummps.',
             style: AppTextStyles.displayLarge.copyWith(
@@ -169,16 +169,17 @@ class _LogoBlock extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
 
         Image.asset(
           'assets/images/realPeopleRealMatches.png',
-          height: 18,
+          height: 30,
           errorBuilder: (_, __, ___) => Text(
             'Real People Real Matches',
             style: AppTextStyles.caption.copyWith(
               color: AppColors.textSecondary,
               fontStyle: FontStyle.italic,
+              fontSize: 22,
               letterSpacing: 0.5,
             ),
           ),
