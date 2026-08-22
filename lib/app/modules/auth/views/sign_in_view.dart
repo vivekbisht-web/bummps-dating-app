@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -147,19 +150,19 @@ class _LogoBlock extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Image.asset(
-          'assets/images/bummps-icon.png',
-          height: 250,
+          'assets/images/bummps-singin-view-icon.png',
+          height: 270,
           errorBuilder: (_, __, ___) => const Icon(
             Icons.favorite,
             color: AppColors.gold,
-            size: 90,
+            size: 120,
           ),
         ),
-        const SizedBox(height: 1),
+        const SizedBox(height: 6),
 
         Image.asset(
           'assets/images/bummps..png',
-          height: 36,
+          height: 44,
           errorBuilder: (_, __, ___) => Text(
             'bummps.',
             style: AppTextStyles.displayLarge.copyWith(
@@ -169,16 +172,17 @@ class _LogoBlock extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
 
         Image.asset(
           'assets/images/realPeopleRealMatches.png',
-          height: 18,
+          height: 30,
           errorBuilder: (_, __, ___) => Text(
             'Real People Real Matches',
             style: AppTextStyles.caption.copyWith(
               color: AppColors.textSecondary,
               fontStyle: FontStyle.italic,
+              fontSize: 22,
               letterSpacing: 0.5,
             ),
           ),
@@ -190,11 +194,74 @@ class _LogoBlock extends StatelessWidget {
 
 // ── Live users counter ────────────────────────────────────────────────────────
 
-class _LiveUsersCounter extends StatelessWidget {
-  const _LiveUsersCounter();
+class _LiveUsersCounter extends StatefulWidget {
+  const _LiveUsersCounter({super.key});
+
+  @override
+  State<_LiveUsersCounter> createState() => _LiveUsersCounterState();
+}
+
+class _LiveUsersCounterState extends State<_LiveUsersCounter>
+    with SingleTickerProviderStateMixin {
+  int _count = 0;
+  Timer? _timer;
+  final Random _random = Random();
+  AnimationController? _animationController;
+  late Animation<int> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    // 2-second ease-out count-up animation from 0 to 6344
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    );
+    _animation = IntTween(begin: 0, end: 6344).animate(
+      CurvedAnimation(
+        parent: _animationController!,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+    _animation.addListener(() {
+      setState(() {
+        _count = _animation.value;
+      });
+    });
+    _animation.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _startFluctuationTimer();
+      }
+    });
+    _animationController!.forward();
+  }
+
+  void _startFluctuationTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (mounted) {
+        setState(() {
+          // Fluctuate count by a random offset (-3 to +4)
+          int delta = _random.nextInt(8) - 3;
+          _count += delta;
+          if (_count < 6300) _count = 6300;
+          if (_count > 6500) _count = 6500;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _animationController?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Pad left with 0s to keep it 4 digits from the start, avoiding layout jumps
+    final paddedCount = _count.toString().padLeft(4, '0');
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
@@ -206,7 +273,7 @@ class _LiveUsersCounter extends StatelessWidget {
         children: [
           const Icon(Icons.people_outline, color: AppColors.gold, size: 20),
           const SizedBox(width: 8),
-          ..._digitBoxes('6344'),
+          ..._digitBoxes(paddedCount),
           const SizedBox(width: 10),
           // Vertical separator
           Container(width: 1, height: 22, color: AppColors.gold.withOpacity(0.4)),
@@ -227,26 +294,48 @@ class _LiveUsersCounter extends StatelessWidget {
     );
   }
 
-  /// Renders each digit in its own amber-bordered box.
-  static List<Widget> _digitBoxes(String number) {
-    return number.split('').map((d) {
-      return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 2),
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-        decoration: BoxDecoration(
-          border: Border.all(color: AppColors.gold, width: 1),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Text(
-          d,
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.gold,
-            fontWeight: FontWeight.w700,
-            fontSize: 14,
+  /// Renders each digit in its own amber-bordered box with a smooth vertical slide/fade animation.
+  List<Widget> _digitBoxes(String number) {
+    final digits = number.split('');
+    final List<Widget> boxes = [];
+    for (int i = 0; i < digits.length; i++) {
+      final d = digits[i];
+      boxes.add(
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.gold, width: 1),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 150),
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0.0, 0.4),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              );
+            },
+            child: Text(
+              d,
+              key: ValueKey<String>('digit_${i}_$d'),
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.gold,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
+            ),
           ),
         ),
       );
-    }).toList();
+    }
+    return boxes;
   }
 }
 

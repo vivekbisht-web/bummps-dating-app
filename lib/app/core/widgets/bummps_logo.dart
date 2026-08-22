@@ -31,11 +31,19 @@ class BummpsLogo extends StatelessWidget {
     }
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Image.asset('assets/images/bummps-icon.png',
-            height: 64, fit: BoxFit.contain),
-        Image.asset('assets/images/bummps..png',
-            height: 32, fit: BoxFit.contain),
+        Image.asset(
+          'assets/images/bummps-singin-view-icon.png',
+          height: 130,
+          fit: BoxFit.contain,
+        ),
+        const SizedBox(height: 6),
+        Image.asset(
+          'assets/images/bummps..png',
+          height: 40,
+          fit: BoxFit.contain,
+        ),
       ],
     );
   }
