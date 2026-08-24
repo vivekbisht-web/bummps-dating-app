@@ -1,0 +1,3 @@
+class AuthTestCases extends Statef {
+
+}
