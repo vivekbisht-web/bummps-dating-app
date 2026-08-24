@@ -19,7 +19,7 @@ class OnboardingView extends GetView<OnboardingController> {
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // Full-screen swipeable slides (image + scrim + title/subtitle).
+          // Full-screen swipeable slides (image + subtle gradient + text image).
           Positioned.fill(
             child: PageView.builder(
               controller: pageController,
@@ -51,7 +51,7 @@ class OnboardingView extends GetView<OnboardingController> {
             ),
           ),
 
-          // Fixed, compact control strip: dots + CTA + login.
+          // Fixed, transparent control strip: dots + CTA + login.
           Align(
             alignment: Alignment.bottomCenter,
             child: _BottomControls(pageController: pageController),
@@ -88,57 +88,41 @@ class _Slide extends StatelessWidget {
             ),
           ),
         ),
-        // Gradient scrim: photo dissolves smoothly into solid black at bottom.
-        const DecoratedBox(
+        // Subtle gradient overlay for contrast while keeping image clearly visible at bottom.
+        DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
+                Colors.black.withValues(alpha: 0.45),
                 Colors.transparent,
                 Colors.transparent,
-                AppColors.background,
+                Colors.black.withValues(alpha: 0.55),
               ],
-              stops: [0.0, 0.35, 0.78],
+              stops: const [0.0, 0.20, 0.60, 1.0],
             ),
           ),
         ),
-        // Title + subtitle sit above the fixed control strip.
+        // Text image in place of text (realPeopleRealMatches.png)
         Positioned(
           left: 28,
           right: 28,
-          bottom: 210,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(text: slide.titleLead),
-                    TextSpan(
-                      text: slide.titleHighlight,
-                      style: const TextStyle(color: AppColors.gold),
-                    ),
-                    TextSpan(text: slide.titleTrail),
-                  ],
-                ),
-                textAlign: TextAlign.center,
-                style: AppTextStyles.displayLarge,
-              ),
-              const SizedBox(height: 14),
-              Text(
-                slide.subtitle,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.bodyMedium,
-              ),
-            ],
+          bottom: 175,
+          child: SafeArea(
+            top: false,
+            child: Image.asset(
+              slide.textImage,
+              height: 32,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
           ),
         ),
       ],
     );
   }
 }
-
 
 class _SkipButton extends StatelessWidget {
   const _SkipButton({required this.onTap});
@@ -155,7 +139,7 @@ class _SkipButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.transparent,
+            color: Colors.black.withValues(alpha: 0.25),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: AppColors.gold, width: 1.2),
           ),
@@ -182,10 +166,8 @@ class _BottomControls extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<OnboardingController>();
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(28, 24, 28, 20),
-      decoration: const BoxDecoration(color: AppColors.background),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(28, 20, 28, 20),
       child: SafeArea(
         top: false,
         child: Column(
@@ -203,7 +185,7 @@ class _BottomControls extends StatelessWidget {
                 dotColor: AppColors.inactiveDot,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             PrimaryButton(
               label: 'Get Started',
               trailingIcon: Icons.arrow_forward,
@@ -213,7 +195,19 @@ class _BottomControls extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Already have an account? ', style: AppTextStyles.caption),
+                Text(
+                  'Already have an account? ',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecondary,
+                    shadows: const [
+                      Shadow(
+                        offset: Offset(0, 1),
+                        blurRadius: 4,
+                        color: Colors.black87,
+                      ),
+                    ],
+                  ),
+                ),
                 GestureDetector(
                   onTap: controller.goToLogin,
                   child: Text(
@@ -221,6 +215,13 @@ class _BottomControls extends StatelessWidget {
                     style: AppTextStyles.caption.copyWith(
                       color: AppColors.gold,
                       fontWeight: FontWeight.w600,
+                      shadows: const [
+                        Shadow(
+                          offset: Offset(0, 1),
+                          blurRadius: 4,
+                          color: Colors.black87,
+                        ),
+                      ],
                     ),
                   ),
                 ),
