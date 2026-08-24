@@ -45,6 +45,12 @@
 	<string>This app requires access to your microphone when recording media.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app requires access to your photo library to select and upload profile pictures.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>This app requires access to save photos to your photo library.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
