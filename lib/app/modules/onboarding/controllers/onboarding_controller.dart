@@ -6,17 +6,11 @@ import '../../../routes/app_pages.dart';
 class OnboardingSlide {
   const OnboardingSlide({
     required this.image,
-    required this.titleLead,
-    required this.titleHighlight,
-    required this.titleTrail,
-    required this.subtitle,
+    this.textImage = 'assets/images/realPeopleRealMatches.png',
   });
 
   final String image;
-  final String titleLead;
-  final String titleHighlight;
-  final String titleTrail;
-  final String subtitle;
+  final String textImage;
 }
 
 /// Drives the onboarding carousel: tracks the active page and navigation.
@@ -26,27 +20,15 @@ class OnboardingController extends GetxController {
   final List<OnboardingSlide> slides = const [
     OnboardingSlide(
       image: 'assets/images/onboarding_1.png',
-      titleLead: 'Find your ',
-      titleHighlight: 'perfect',
-      titleTrail: ' match',
-      subtitle:
-          'Discover meaningful connections built on shared values and genuine chemistry.',
+      textImage: 'assets/images/realPeopleRealMatches.png',
     ),
     OnboardingSlide(
       image: 'assets/images/onboarding_2.png',
-      titleLead: 'Spark real ',
-      titleHighlight: 'conversations',
-      titleTrail: '',
-      subtitle:
-          'Break the ice with prompts designed to reveal who people really are.',
+      textImage: 'assets/images/realPeopleRealMatches.png',
     ),
     OnboardingSlide(
       image: 'assets/images/onboarding_3.png',
-      titleLead: 'Date with ',
-      titleHighlight: 'confidence',
-      titleTrail: '',
-      subtitle:
-          'Verified profiles and thoughtful matching keep every connection safe.',
+      textImage: 'assets/images/realPeopleRealMatches.png',
     ),
   ];
 
