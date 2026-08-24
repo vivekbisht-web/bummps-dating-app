@@ -5,6 +5,7 @@ import '../../core/services/network/dio_client.dart';
 import '../models/login_response.dart';
 import '../models/user_profile.dart';
 import '../models/subscription_plan.dart';
+import '../models/wallet.dart';
 import '../models/circle_dashboard.dart';
 
 class AuthProvider {
@@ -152,13 +153,40 @@ class AuthProvider {
   }
 
   /// Purchase a subscription plan: POST /api/plans/subscribe
+  /// [paymentMethod] can be 'wallet' or 'razorpay'
   Future<Map<String, dynamic>> subscribe({
     required String planId,
     required String billingCycle,
+    String paymentMethod = 'wallet',
   }) async {
     return await _dioClient.post<Map<String, dynamic>>(
       AppConstants.subscribe,
       data: {
+        'planId': planId,
+        'billingCycle': billingCycle,
+        'paymentMethod': paymentMethod,
+      },
+      fromJson: (json) {
+        if (json is Map<String, dynamic>) return json;
+        return {};
+      },
+    );
+  }
+
+  /// Verify Razorpay subscription payment: POST /api/plans/subscribe/verify
+  Future<Map<String, dynamic>> verifySubscription({
+    required String razorpayOrderId,
+    required String razorpayPaymentId,
+    required String razorpaySignature,
+    required String planId,
+    required String billingCycle,
+  }) async {
+    return await _dioClient.post<Map<String, dynamic>>(
+      AppConstants.subscribeVerify,
+      data: {
+        'razorpay_order_id': razorpayOrderId,
+        'razorpay_payment_id': razorpayPaymentId,
+        'razorpay_signature': razorpaySignature,
         'planId': planId,
         'billingCycle': billingCycle,
       },
@@ -181,6 +209,60 @@ class AuthProvider {
           return UserSubscription.fromJson(json);
         }
         return UserSubscription(hasActiveSubscription: false, isActive: false);
+      },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Wallet Endpoints
+  // ---------------------------------------------------------------------------
+
+  /// Create a Razorpay order for adding money to wallet: POST /api/plans/wallet/create-order
+  Future<RazorpayOrder> createWalletOrder(double amount) async {
+    return await _dioClient.post<RazorpayOrder>(
+      AppConstants.walletCreateOrder,
+      data: {'amount': amount},
+      fromJson: (json) {
+        if (json is Map<String, dynamic>) {
+          return RazorpayOrder.fromJson(json);
+        }
+        return RazorpayOrder(orderId: '', amount: 0, currency: 'INR', keyId: '');
+      },
+    );
+  }
+
+  /// Verify wallet Razorpay payment: POST /api/plans/wallet/verify
+  Future<Map<String, dynamic>> verifyWalletPayment({
+    required String razorpayOrderId,
+    required String razorpayPaymentId,
+    required String razorpaySignature,
+  }) async {
+    return await _dioClient.post<Map<String, dynamic>>(
+      AppConstants.walletVerify,
+      data: {
+        'razorpay_order_id': razorpayOrderId,
+        'razorpay_payment_id': razorpayPaymentId,
+        'razorpay_signature': razorpaySignature,
+      },
+      fromJson: (json) {
+        if (json is Map<String, dynamic>) return json;
+        return {};
+      },
+    );
+  }
+
+  /// Get wallet balance: GET /api/plans/wallet
+  Future<WalletBalance> getWalletBalance() async {
+    return await _dioClient.get<WalletBalance>(
+      AppConstants.walletBalance,
+      options: Options(
+        extra: {'suppressGlobalError': true},
+      ),
+      fromJson: (json) {
+        if (json is Map<String, dynamic>) {
+          return WalletBalance.fromJson(json);
+        }
+        return WalletBalance(balance: 0.0);
       },
     );
   }

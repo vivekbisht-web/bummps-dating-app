@@ -2,6 +2,7 @@ class AppConstants {
   AppConstants._();
 
   static const String baseUrl = 'https://datingapp-oz22.onrender.com/api/';
+  static const String razorpayKey = 'rzp_test_TE9gEROWqFsafm'; // Razorpay Key ID (Override if backend doesn't send key in payload)
 
   // Auth Endpoints
   static const String login = 'auth/login';
@@ -25,7 +26,13 @@ class AppConstants {
   // Plans Endpoints
   static const String allPlans = 'plans/allplans';
   static const String subscribe = 'plans/subscribe';
+  static const String subscribeVerify = 'plans/subscribe/verify';
   static const String mySubscription = 'plans/subscription';
+
+  // Wallet Endpoints
+  static const String walletCreateOrder = 'plans/wallet/create-order';
+  static const String walletVerify = 'plans/wallet/verify';
+  static const String walletBalance = 'plans/wallet';
 
   // Circle Endpoints
   static const String circleDashboard = 'circle/dashboard';

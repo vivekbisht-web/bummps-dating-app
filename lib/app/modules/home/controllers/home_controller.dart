@@ -3,17 +3,19 @@ import 'dart:math' show sqrt, min;
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import '../../../routes/app_pages.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/app_snackbar.dart';
 import '../../../core/services/storage/secure_storage_service.dart';
 import '../../../core/services/socket/socket_service.dart';
 import '../../../data/repositories/auth_repository.dart';
-import '../../../data/repositories/chat_repository.dart';
 import '../../../data/models/user_profile.dart';
 import '../../../data/models/subscription_plan.dart';
+import '../../../data/models/wallet.dart';
 import '../../../data/models/circle_dashboard.dart';
 
 /// Representation of a discover profile card.
@@ -146,6 +148,18 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   final RxBool isLoadingPlans = false.obs;
   final RxBool isSubmittingSubscription = false.obs;
 
+  // Wallet state
+  final RxDouble walletBalance = 0.0.obs;
+  final RxBool isLoadingWallet = false.obs;
+  final RxBool isAddingMoney = false.obs;
+
+  // Razorpay instance
+  late Razorpay _razorpay;
+  // Track pending operations for Razorpay callbacks
+  String? _pendingRazorpayAction; // 'wallet_topup' or 'subscribe'
+  String? _pendingPlanId;
+  String? _pendingBillingCycle;
+
   // Circle Dashboard state
   final Rxn<CircleDashboard> circleDashboard = Rxn<CircleDashboard>();
   final RxBool isLoadingDashboard = false.obs;
@@ -187,9 +201,12 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   @override
   void onInit() {
     super.onInit();
+    _initRazorpay();
+    _loadInitialPlans();
     fetchUserProfile();
     fetchUserSubscription();
     fetchSubscriptionPlans();
+    fetchWalletBalance();
     _loadInitialProfiles();
     _loadLikesYouList();
     _loadMatchesFromApi();
@@ -198,6 +215,95 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     fetchCircleEvents();
     fetchCircleDiscussions();
     _initSocketService();
+  }
+
+  @override
+  void onClose() {
+    _razorpay.clear();
+    super.onClose();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Razorpay Setup
+  // ---------------------------------------------------------------------------
+
+  void _initRazorpay() {
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) async {
+    debugPrint('[HomeController] Razorpay Payment Success: ${response.paymentId}');
+    final authRepo = Get.find<AuthRepository>();
+
+    try {
+      if (_pendingRazorpayAction == 'wallet_topup') {
+        // Verify wallet top-up payment
+        final result = await authRepo.verifyWalletPayment(
+          razorpayOrderId: response.orderId ?? '',
+          razorpayPaymentId: response.paymentId ?? '',
+          razorpaySignature: response.signature ?? '',
+        );
+        debugPrint('[HomeController] Wallet verify result: $result');
+        AppSnackbar.showSuccess(
+          title: 'Money Added',
+          message: 'Wallet topped up successfully!',
+        );
+        await fetchWalletBalance();
+      } else if (_pendingRazorpayAction == 'subscribe') {
+        // Verify subscription Razorpay payment
+        final result = await authRepo.verifySubscription(
+          razorpayOrderId: response.orderId ?? '',
+          razorpayPaymentId: response.paymentId ?? '',
+          razorpaySignature: response.signature ?? '',
+          planId: _pendingPlanId ?? '',
+          billingCycle: _pendingBillingCycle ?? 'monthly',
+        );
+        debugPrint('[HomeController] Subscription verify result: $result');
+        AppSnackbar.showSuccess(
+          title: 'Subscription Active',
+          message: 'Successfully subscribed to plan!',
+        );
+        await fetchUserSubscription();
+        await loadWhoLikedMeProfiles();
+      }
+    } catch (e) {
+      debugPrint('[HomeController] Razorpay verify error: $e');
+      AppSnackbar.showError(
+        title: 'Verification Failed',
+        message: 'Payment received but verification failed. Please contact support.',
+      );
+    } finally {
+      isAddingMoney.value = false;
+      isSubmittingSubscription.value = false;
+      _pendingRazorpayAction = null;
+      _pendingPlanId = null;
+      _pendingBillingCycle = null;
+    }
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) {
+    debugPrint('[HomeController] Razorpay Payment Error: ${response.code} - ${response.message}');
+    isAddingMoney.value = false;
+    isSubmittingSubscription.value = false;
+    _pendingRazorpayAction = null;
+    _pendingPlanId = null;
+    _pendingBillingCycle = null;
+
+    AppSnackbar.showError(
+      title: 'Payment Failed',
+      message: response.message ?? 'Payment was cancelled or failed.',
+    );
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    debugPrint('[HomeController] Razorpay External Wallet: ${response.walletName}');
+    AppSnackbar.showSuccess(
+      title: 'External Wallet',
+      message: 'Redirecting to ${response.walletName}...',
+    );
   }
 
   /// Fetch circle dashboard from GET /api/circle/dashboard
@@ -604,13 +710,64 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
         .toList();
   }
 
+  void _loadInitialPlans() {
+    if (subscriptionPlans.isEmpty) {
+      subscriptionPlans.assignAll([
+        SubscriptionPlan(
+          id: '6a8984d2e5d558b47ae2029c',
+          name: 'Gold',
+          subtitle: 'ENHANCED EXPERIENCE',
+          monthlyPrice: 29.99,
+          annualPrice: 17.99,
+          isPopular: true,
+          features: [
+            PlanFeature(id: '1', text: 'Unlimited Likes', included: true),
+            PlanFeature(id: '2', text: 'See Who Liked You', included: true),
+            PlanFeature(id: '3', text: '1 Profile Boost per week', included: true),
+            PlanFeature(id: '4', text: 'Travel Mode enabled', included: true),
+          ],
+        ),
+        SubscriptionPlan(
+          id: '6a8988e2e5d558b47ae202ac',
+          name: 'Platinum',
+          subtitle: 'THE ULTIMATE SUITE',
+          monthlyPrice: 49.99,
+          annualPrice: 29.99,
+          isPopular: false,
+          features: [
+            PlanFeature(id: '1', text: 'Unlimited Likes', included: true),
+            PlanFeature(id: '2', text: 'See Who Liked You', included: true),
+            PlanFeature(id: '3', text: 'Priority Messaging', included: true),
+            PlanFeature(id: '4', text: '24/7 Concierge Support', included: true),
+            PlanFeature(id: '5', text: 'Elite Profile Badge', included: true),
+          ],
+        ),
+        SubscriptionPlan(
+          id: '6a898925e5d558b47ae202b1',
+          name: 'Silver',
+          subtitle: 'BASIC PLAN',
+          monthlyPrice: 9.99,
+          annualPrice: 5.99,
+          isPopular: false,
+          features: [
+            PlanFeature(id: '1', text: '1 Profile Bump per month', included: true),
+            PlanFeature(id: '2', text: 'Standard Visibility', included: true),
+            PlanFeature(id: '3', text: 'Priority Support', included: false),
+          ],
+        ),
+      ]);
+    }
+  }
+
   Future<void> fetchSubscriptionPlans() async {
     try {
       isLoadingPlans.value = true;
       final authRepo = Get.find<AuthRepository>();
       final plans = await authRepo.getAllPlans();
-      debugPrint('[HomeController] Loaded ${plans.length} subscription plans from API');
-      subscriptionPlans.assignAll(plans);
+      if (plans.isNotEmpty) {
+        debugPrint('[HomeController] Loaded ${plans.length} subscription plans from API');
+        subscriptionPlans.assignAll(plans);
+      }
     } catch (e) {
       debugPrint('[HomeController] Error loading subscription plans: $e');
     } finally {
@@ -633,24 +790,134 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     }
   }
 
-  Future<bool> purchaseSubscription(String planId, String billingCycle) async {
+  // ---------------------------------------------------------------------------
+  // Wallet
+  // ---------------------------------------------------------------------------
+
+  /// Fetch wallet balance from GET /api/plans/wallet
+  Future<void> fetchWalletBalance() async {
+    try {
+      isLoadingWallet.value = true;
+      final authRepo = Get.find<AuthRepository>();
+      final wallet = await authRepo.getWalletBalance();
+      walletBalance.value = wallet.balance;
+      debugPrint('[HomeController] Wallet balance: ${wallet.balance} ${wallet.currency}');
+    } catch (e) {
+      debugPrint('[HomeController] Error fetching wallet balance: $e');
+    } finally {
+      isLoadingWallet.value = false;
+    }
+  }
+
+  /// Add money to wallet — creates Razorpay order, opens checkout
+  Future<void> addMoneyToWallet(double amount) async {
+    try {
+      isAddingMoney.value = true;
+      _pendingRazorpayAction = 'wallet_topup';
+
+      final authRepo = Get.find<AuthRepository>();
+      final order = await authRepo.createWalletOrder(amount);
+
+      if (order.orderId.isEmpty) {
+        AppSnackbar.showError(
+          title: 'Order Failed',
+          message: 'Could not create payment order. Please try again.',
+        );
+        isAddingMoney.value = false;
+        return;
+      }
+
+      final String rzpKey = order.keyId.isNotEmpty ? order.keyId : AppConstants.razorpayKey;
+      debugPrint('[HomeController] Wallet order created: ${order.orderId}, key: $rzpKey');
+
+      // Open Razorpay checkout
+      final options = {
+        'key': rzpKey,
+        'amount': order.amount > 0 ? order.amount : (amount * 100).toInt(),
+        'currency': order.currency,
+        'order_id': order.orderId,
+        'name': 'Bummps',
+        'description': 'Add ₹${amount.toStringAsFixed(0)} to Wallet',
+        'prefill': {
+          'email': '',
+          'contact': '',
+        },
+        'theme': {'color': '#C5A44E'},
+      };
+      _razorpay.open(options);
+    } catch (e) {
+      debugPrint('[HomeController] Error creating wallet order: $e');
+      isAddingMoney.value = false;
+      AppSnackbar.showError(
+        title: 'Payment Error',
+        message: 'Failed to initiate payment: $e',
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Subscription Purchase (Wallet or Razorpay)
+  // ---------------------------------------------------------------------------
+
+  /// Purchase subscription using wallet balance
+  Future<bool> purchaseSubscription(String planId, String billingCycle, {String paymentMethod = 'wallet'}) async {
     try {
       isSubmittingSubscription.value = true;
       final authRepo = Get.find<AuthRepository>();
       final response = await authRepo.subscribe(
         planId: planId,
         billingCycle: billingCycle,
+        paymentMethod: paymentMethod,
       );
       
       debugPrint('[HomeController] Purchase subscription response: $response');
+
+      if (paymentMethod == 'razorpay') {
+        // Backend returns a Razorpay order — open checkout
+        final order = RazorpayOrder.fromJson(response);
+        if (order.orderId.isEmpty) {
+          AppSnackbar.showError(
+            title: 'Order Failed',
+            message: response['message']?.toString() ?? 'Could not create payment order.',
+          );
+          isSubmittingSubscription.value = false;
+          return false;
+        }
+
+        _pendingRazorpayAction = 'subscribe';
+        _pendingPlanId = planId;
+        _pendingBillingCycle = billingCycle;
+
+        final String rzpKey = order.keyId.isNotEmpty ? order.keyId : AppConstants.razorpayKey;
+        debugPrint('[HomeController] Subscription order created: ${order.orderId}, key: $rzpKey');
+
+        final options = {
+          'key': rzpKey,
+          'amount': order.amount,
+          'currency': order.currency,
+          'order_id': order.orderId,
+          'name': 'Bummps',
+          'description': 'Subscribe to Plan',
+          'prefill': {
+            'email': '',
+            'contact': '',
+          },
+          'theme': {'color': '#C5A44E'},
+        };
+        _razorpay.open(options);
+        // The result will be handled in _handlePaymentSuccess
+        return true;
+      }
       
+      // Wallet payment — immediate result
       if (response['success'] == true) {
         AppSnackbar.showSuccess(
           title: 'Subscription Active',
           message: 'Successfully subscribed to plan!',
         );
-        // Refresh subscription state
+        // Refresh subscription & wallet state
         await fetchUserSubscription();
+        await fetchWalletBalance();
         // Refresh who liked me profiles list
         await loadWhoLikedMeProfiles();
         return true;
@@ -669,7 +936,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
       );
       return false;
     } finally {
-      isSubmittingSubscription.value = false;
+      if (_pendingRazorpayAction != 'subscribe') {
+        isSubmittingSubscription.value = false;
+      }
     }
   }
 

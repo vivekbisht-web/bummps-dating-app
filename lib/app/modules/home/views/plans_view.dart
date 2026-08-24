@@ -41,6 +41,10 @@ class _PlansViewState extends State<PlansView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // --- Wallet Balance Card ---
+              _buildWalletCard(),
+              const SizedBox(height: 24),
+
               // --- Header Section ---
               const SizedBox(height: 8),
               Center(
@@ -164,7 +168,7 @@ class _PlansViewState extends State<PlansView> {
               // --- Subscription Tier Card ---
               Obx(() {
                 final controller = Get.find<HomeController>();
-                if (controller.isLoadingPlans.value) {
+                if (controller.isLoadingPlans.value && controller.subscriptionPlans.isEmpty) {
                   return const Center(
                     child: Padding(
                       padding: EdgeInsets.all(40.0),
@@ -321,10 +325,13 @@ class _PlansViewState extends State<PlansView> {
                               ),
                               onPressed: (isCurrentPlan || isSubmitting) 
                                   ? null 
-                                  : () async {
-                                      await controller.purchaseSubscription(
+                                  : () {
+                                      _showPaymentMethodSheet(
+                                        context,
+                                        controller,
                                         plan.id,
                                         isMonthly ? 'monthly' : 'annual',
+                                        price,
                                       );
                                     },
                               child: isSubmitting 
@@ -474,6 +481,432 @@ class _PlansViewState extends State<PlansView> {
       ),
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // Wallet Balance Card
+  // ---------------------------------------------------------------------------
+
+  Widget _buildWalletCard() {
+    final controller = Get.find<HomeController>();
+    return Obx(() {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1E1C18), Color(0xFF2A2520)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.gold.withOpacity(0.3), width: 1.2),
+        ),
+        child: Row(
+          children: [
+            // Wallet icon
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.gold.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.account_balance_wallet, color: AppColors.gold, size: 24),
+            ),
+            const SizedBox(width: 16),
+            // Balance info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'WALLET BALANCE',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  controller.isLoadingWallet.value
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gold),
+                        )
+                      : Text(
+                          '₹${controller.walletBalance.value.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                ],
+              ),
+            ),
+            // Add Money button
+            Obx(() {
+              final isAdding = controller.isAddingMoney.value;
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: isAdding ? null : () => _showAddMoneySheet(context, controller),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isAdding ? AppColors.gold.withOpacity(0.5) : AppColors.gold,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (isAdding)
+                          const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onGold),
+                          )
+                        else
+                          const Icon(Icons.add, size: 16, color: AppColors.onGold),
+                        const SizedBox(width: 6),
+                        Text(
+                          isAdding ? 'ADDING...' : 'ADD MONEY',
+                          style: const TextStyle(
+                            color: AppColors.onGold,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
+      );
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Add Money Bottom Sheet
+  // ---------------------------------------------------------------------------
+
+  void _showAddMoneySheet(BuildContext context, HomeController controller) {
+    final TextEditingController amountController = TextEditingController();
+    final List<int> quickAmounts = [100, 200, 500, 1000, 2000];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          ),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Color(0xFF1A1A1C),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.divider,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Add Money to Wallet',
+                  style: AppTextStyles.titleMedium.copyWith(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Choose an amount or enter custom value',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Quick amount chips
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: quickAmounts.map((amt) {
+                    return GestureDetector(
+                      onTap: () {
+                        amountController.text = amt.toString();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2A2520),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.gold.withOpacity(0.4)),
+                        ),
+                        child: Text(
+                          '₹$amt',
+                          style: const TextStyle(
+                            color: AppColors.gold,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+
+                // Custom amount input
+                TextField(
+                  controller: amountController,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: Colors.white, fontSize: 18),
+                  decoration: InputDecoration(
+                    prefixText: '₹ ',
+                    prefixStyle: const TextStyle(color: AppColors.gold, fontSize: 18, fontWeight: FontWeight.bold),
+                    hintText: 'Enter amount',
+                    hintStyle: TextStyle(color: AppColors.textMuted.withOpacity(0.5)),
+                    filled: true,
+                    fillColor: const Color(0xFF141416),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.divider),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.divider),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.gold),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Add Money CTA
+                ElevatedButton(
+                  onPressed: () {
+                    final amount = double.tryParse(amountController.text.trim());
+                    if (amount == null || amount <= 0) {
+                      Get.snackbar(
+                        'Invalid Amount',
+                        'Please enter a valid amount.',
+                        backgroundColor: Colors.red.withOpacity(0.8),
+                        colorText: Colors.white,
+                        snackPosition: SnackPosition.TOP,
+                      );
+                      return;
+                    }
+                    Navigator.of(ctx).pop();
+                    controller.addMoneyToWallet(amount);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.gold,
+                    foregroundColor: AppColors.onGold,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    minimumSize: const Size.fromHeight(50),
+                  ),
+                  child: Text(
+                    'PROCEED TO PAY',
+                    style: AppTextStyles.button.copyWith(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Payment Method Selection Sheet
+  // ---------------------------------------------------------------------------
+
+  void _showPaymentMethodSheet(
+    BuildContext context,
+    HomeController controller,
+    String planId,
+    String billingCycle,
+    double price,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF1A1A1C),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Choose Payment Method',
+                style: AppTextStyles.titleMedium.copyWith(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Amount: \$${price.toStringAsFixed(2)}',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Wallet Option
+              Obx(() {
+                final balance = controller.walletBalance.value;
+                final bool hasEnough = balance >= price;
+                return _buildPaymentOption(
+                  icon: Icons.account_balance_wallet,
+                  title: 'Pay with Wallet',
+                  subtitle: 'Balance: ₹${balance.toStringAsFixed(2)}${hasEnough ? '' : ' (Insufficient)'}',
+                  enabled: hasEnough,
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    controller.purchaseSubscription(planId, billingCycle, paymentMethod: 'wallet');
+                  },
+                );
+              }),
+              const SizedBox(height: 12),
+
+              // Razorpay Option
+              _buildPaymentOption(
+                icon: Icons.credit_card,
+                title: 'Pay with Razorpay',
+                subtitle: 'UPI, Card, Net Banking & more',
+                enabled: true,
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  controller.purchaseSubscription(planId, billingCycle, paymentMethod: 'razorpay');
+                },
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPaymentOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool enabled,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: Opacity(
+        opacity: enabled ? 1.0 : 0.4,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF141416),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: enabled ? AppColors.gold.withOpacity(0.4) : AppColors.divider),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.gold.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: AppColors.gold, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: enabled ? AppColors.gold : AppColors.divider,
+                size: 22,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Existing Helper Widgets
+  // ---------------------------------------------------------------------------
 
   Widget _buildFeaturePoint(String text, {bool isIncluded = true}) {
     return Padding(
