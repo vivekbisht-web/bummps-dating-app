@@ -3,6 +3,7 @@ import '../../core/services/storage/secure_storage_service.dart';
 import '../models/login_response.dart';
 import '../models/user_profile.dart';
 import '../models/subscription_plan.dart';
+import '../models/wallet.dart';
 import '../models/circle_dashboard.dart';
 import '../providers/auth_provider.dart';
 
@@ -85,13 +86,62 @@ class AuthRepository {
   Future<Map<String, dynamic>> subscribe({
     required String planId,
     required String billingCycle,
+    String paymentMethod = 'wallet',
   }) async {
-    return await _authProvider.subscribe(planId: planId, billingCycle: billingCycle);
+    return await _authProvider.subscribe(
+      planId: planId,
+      billingCycle: billingCycle,
+      paymentMethod: paymentMethod,
+    );
+  }
+
+  /// Verify Razorpay subscription payment
+  Future<Map<String, dynamic>> verifySubscription({
+    required String razorpayOrderId,
+    required String razorpayPaymentId,
+    required String razorpaySignature,
+    required String planId,
+    required String billingCycle,
+  }) async {
+    return await _authProvider.verifySubscription(
+      razorpayOrderId: razorpayOrderId,
+      razorpayPaymentId: razorpayPaymentId,
+      razorpaySignature: razorpaySignature,
+      planId: planId,
+      billingCycle: billingCycle,
+    );
   }
 
   /// Fetch user active subscription
   Future<UserSubscription> getMySubscription() async {
     return await _authProvider.getMySubscription();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Wallet
+  // ---------------------------------------------------------------------------
+
+  /// Create a Razorpay order for wallet top-up
+  Future<RazorpayOrder> createWalletOrder(double amount) async {
+    return await _authProvider.createWalletOrder(amount);
+  }
+
+  /// Verify wallet Razorpay payment
+  Future<Map<String, dynamic>> verifyWalletPayment({
+    required String razorpayOrderId,
+    required String razorpayPaymentId,
+    required String razorpaySignature,
+  }) async {
+    return await _authProvider.verifyWalletPayment(
+      razorpayOrderId: razorpayOrderId,
+      razorpayPaymentId: razorpayPaymentId,
+      razorpaySignature: razorpaySignature,
+    );
+  }
+
+  /// Get wallet balance
+  Future<WalletBalance> getWalletBalance() async {
+    return await _authProvider.getWalletBalance();
   }
 
   /// Fetch circle dashboard — GET /api/circle/dashboard
