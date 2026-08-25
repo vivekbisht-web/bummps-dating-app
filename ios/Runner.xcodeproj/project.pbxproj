@@ -194,6 +194,7 @@
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Runner" */;
 			buildPhases = (
 				9FEB335AE3C99A6814B3E286 /* [CP] Check Pods Manifest.lock */,
+				AA1B2C3D4E5F678901234567 /* Strip xattrs from native_assets */,
 				9740EEB61CF901F6004384FC /* Run Script */,
 				97C146EA1CF9000F007C117D /* Sources */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
@@ -272,6 +273,22 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		AA1B2C3D4E5F678901234567 /* Strip xattrs from native_assets */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Strip xattrs from native_assets";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Fix: Remove extended attributes that break codesign.\n# Root cause: com.apple.FinderInfo on .framework DIRECTORIES causes codesign to fail.\n# xattr -c silently fails on these; must use xattr -d explicitly.\n\nstrip_framework_xattrs() {\n  local dir=\"$1\"\n  if [ -d \"$dir\" ]; then\n    find \"$dir\" -name '*.framework' -type d | while IFS= read -r fw; do\n      xattr -d com.apple.FinderInfo \"$fw\" 2>/dev/null || true\n      xattr -d com.apple.quarantine \"$fw\" 2>/dev/null || true\n      xattr -d 'com.apple.fileprovider.fpfs#P' \"$fw\" 2>/dev/null || true\n    done\n    # Also clear all other xattrs on nested files\n    find \"$dir\" -not -name '*.framework' -print0 2>/dev/null | xargs -0 xattr -c 2>/dev/null || true\n  fi\n}\n\n# 1. Engine artifact cache (source of Flutter.framework)\nstrip_framework_xattrs \"${FLUTTER_ROOT}/bin/cache/artifacts/engine\"\n\n# 2. build/ios output (where Flutter.framework gets unpacked then signed)\nstrip_framework_xattrs \"${SRCROOT}/../build/ios\"\n\n# 3. build/native_assets (objective_c.framework etc.)\nstrip_framework_xattrs \"${SRCROOT}/../build/native_assets/ios\"\n";
+			showEnvVarsInLog = 0;
+		};
 		3B06AD1E1E4923F5004D2608 /* Thin Binary */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -318,13 +335,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
