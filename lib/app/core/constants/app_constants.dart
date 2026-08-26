@@ -1,7 +1,7 @@
 class AppConstants {
   AppConstants._();
 
-  static const String baseUrl = 'http://148.66.153.121:5000/api/';
+  static const String baseUrl = 'http://148.66.153.121:5000/api/';   //baseUrl updated
   static const String razorpayKey = 'rzp_test_TE9gEROWqFsafm'; // Razorpay Key ID (Override if backend doesn't send key in payload)
 
   // Auth Endpoints
