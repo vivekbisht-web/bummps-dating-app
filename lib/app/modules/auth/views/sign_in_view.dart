@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -83,25 +84,38 @@ class SignInView extends StatelessWidget {
               children: [
                 _SocialButton(
                   id: 'btn_signin_facebook',
-                  icon: Icons.facebook,
+                  icon: FontAwesomeIcons.facebookF,
+                  backgroundColor: Colors.transparent,
+                  iconColor: AppColors.gold,
+                  hasBorder: true,
                   onTap: _onFacebook,
                 ),
                 const SizedBox(width: 16),
                 _SocialButton(
                   id: 'btn_signin_apple',
-                  icon: Icons.apple,
+                  icon: FontAwesomeIcons.apple,
+                  backgroundColor: AppColors.gold,
+                  iconColor: AppColors.background,
+                  hasBorder: false,
                   onTap: _onApple,
                 ),
                 const SizedBox(width: 16),
                 _SocialButton(
                   id: 'btn_signin_google',
-                  customLabel: 'G',
+                  icon: FontAwesomeIcons.google,
+                  backgroundColor: Colors.transparent,
+                  iconColor: AppColors.gold,
+                  hasBorder: false,
+                  iconSize: 38,
                   onTap: _onGoogle,
                 ),
                 const SizedBox(width: 16),
                 _SocialButton(
                   id: 'btn_signin_phone',
                   icon: Icons.phone,
+                  backgroundColor: AppColors.gold,
+                  iconColor: AppColors.background,
+                  hasBorder: false,
                   onTap: _onPhone,
                 ),
               ],
@@ -345,38 +359,40 @@ class _SocialButton extends StatelessWidget {
   const _SocialButton({
     required this.id,
     required this.onTap,
-    this.icon,
-    this.customLabel,
-  }) : assert(icon != null || customLabel != null);
+    required this.icon,
+    this.backgroundColor = Colors.transparent,
+    this.iconColor = AppColors.gold,
+    this.hasBorder = true,
+    this.iconSize = 22,
+  });
 
   final String id;
   final VoidCallback onTap;
-  final IconData? icon;
-  final String? customLabel;
+  final IconData icon;
+  final Color backgroundColor;
+  final Color iconColor;
+  final bool hasBorder;
+  final double iconSize;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Container(
         width: 52,
         height: 52,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: AppColors.gold, width: 1.5),
-          color: Colors.transparent,
+          border: hasBorder ? Border.all(color: AppColors.gold, width: 1.5) : null,
+          color: backgroundColor,
         ),
         alignment: Alignment.center,
-        child: icon != null
-            ? Icon(icon, color: AppColors.gold, size: 22)
-            : Text(
-                customLabel!,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.gold,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 18,
-                ),
-              ),
+        child: Icon(
+          icon,
+          color: iconColor,
+          size: iconSize,
+        ),
       ),
     );
   }
