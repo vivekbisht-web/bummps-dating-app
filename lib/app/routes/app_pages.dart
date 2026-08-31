@@ -14,6 +14,8 @@ import '../modules/home/views/chat_detail_view.dart';
 import '../modules/home/views/liked_history_view.dart';
 import '../modules/home/views/plans_view.dart';
 import '../modules/home/views/help_support_view.dart';
+import '../modules/home/bindings/edit_profile_binding.dart';
+import '../modules/home/views/edit_profile_view.dart';
 
 part 'app_routes.dart';
 
@@ -52,6 +54,12 @@ class AppPages {
       name: _Paths.profileSetup,
       page: () => const ProfileScreen(),
       binding: ProfileSetupBinding(),
+      transition: Transition.rightToLeftWithFade,
+    ),
+    GetPage(
+      name: _Paths.editProfile,
+      page: () => const EditProfileView(),
+      binding: EditProfileBinding(),
       transition: Transition.rightToLeftWithFade,
     ),
     GetPage(

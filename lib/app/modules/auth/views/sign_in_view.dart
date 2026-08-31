@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
@@ -224,28 +225,37 @@ class _LiveUsersCounterState extends State<_LiveUsersCounter>
   Timer? _timer;
   final Random _random = Random();
   AnimationController? _animationController;
-  late Animation<int> _animation;
+  Animation<int>? _animation;
+  int _targetCount = 23; // default fallback target
 
   @override
   void initState() {
     super.initState();
-    // 2-second ease-out count-up animation from 0 to 6344
+    // Start initial animation to our default target (23) immediately
+    _startAnimation(0, _targetCount);
+    // Fetch live user count from API
+    _fetchLiveCount();
+  }
+
+  void _startAnimation(int begin, int end) {
+    _timer?.cancel();
+    _animationController?.dispose();
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 1500),
     );
-    _animation = IntTween(begin: 0, end: 6344).animate(
+    _animation = IntTween(begin: begin, end: end).animate(
       CurvedAnimation(
         parent: _animationController!,
         curve: Curves.easeOutCubic,
       ),
     );
-    _animation.addListener(() {
+    _animation!.addListener(() {
       setState(() {
-        _count = _animation.value;
+        _count = _animation!.value;
       });
     });
-    _animation.addStatusListener((status) {
+    _animation!.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         _startFluctuationTimer();
       }
@@ -253,15 +263,40 @@ class _LiveUsersCounterState extends State<_LiveUsersCounter>
     _animationController!.forward();
   }
 
+  Future<void> _fetchLiveCount() async {
+    try {
+      final dio = Dio();
+      final response = await dio.get('https://datingapp-oz22.onrender.com/api/auth/count');
+      if (response.statusCode == 200 && response.data != null) {
+        final totalUsers = response.data['totalUsers'];
+        int? parsedCount;
+        if (totalUsers is int) {
+          parsedCount = totalUsers;
+        } else if (totalUsers is String) {
+          parsedCount = int.tryParse(totalUsers);
+        }
+        if (parsedCount != null && parsedCount > 0 && parsedCount != _targetCount) {
+          _targetCount = parsedCount;
+          if (mounted) {
+            // Animate from whatever the current count is, up/down to the newly fetched count
+            _startAnimation(_count, _targetCount);
+          }
+        }
+      }
+    } catch (e) {
+      // Fail silently and keep the default animation/fluctuation
+    }
+  }
+
   void _startFluctuationTimer() {
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 4), (timer) {
       if (mounted) {
         setState(() {
           // Fluctuate count by a random offset (-3 to +4)
           int delta = _random.nextInt(8) - 3;
           _count += delta;
-          if (_count < 6300) _count = 6300;
-          if (_count > 6500) _count = 6500;
+          if (_count < 1) _count = 1;
         });
       }
     });

@@ -253,4 +253,12 @@ class AuthRepository {
 
     return loginResponse;
   }
+
+  Future<UserProfile> updateProfile({
+    required FormData formData,
+  }) async {
+    return await _authProvider.updateProfile(
+      formData: formData,
+    );
+  }
 }

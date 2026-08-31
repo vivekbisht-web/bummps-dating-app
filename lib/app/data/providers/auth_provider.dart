@@ -393,6 +393,23 @@ class AuthProvider {
     );
   }
 
+  Future<UserProfile> updateProfile({
+    required FormData formData,
+  }) async {
+    return await _dioClient.put<UserProfile>(
+      AppConstants.profile,
+      data: formData,
+      fromJson: (json) {
+        if (json is String) {
+          return UserProfile.fromJson(jsonDecode(json) as Map<String, dynamic>
+          );
+        }
+        return UserProfile.fromJson(json as Map<String, dynamic>);
+      },
+    );
+  }
+
+
   // ---------------------------------------------------------------------------
   // Circle Endpoints
   // ---------------------------------------------------------------------------

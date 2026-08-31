@@ -1,13 +1,17 @@
 class AppConstants {
   AppConstants._();
 
-  static const String baseUrl = 'http://148.66.153.121:5000/api/';   //baseUrl updated
+  // static const String baseUrl = 'http://148.66.153.121:5000/api/';   //baseUrl updated
+  static const String baseUrl = 'https://datingapp-oz22.onrender.com/api/';   //baseUrl updated
   static const String razorpayKey = 'rzp_test_TE9gEROWqFsafm'; // Razorpay Key ID (Override if backend doesn't send key in payload)
 
   // Auth Endpoints
   static const String login = 'auth/login';
   static const String register = 'auth/register';
   static const String profile = 'auth/profile';
+  static const String updateProfile = '/auth/profile';
+  static const String totalUserCount = '/auth/count';
+
   static const String helpSupport = 'auth/help-support';
 
   // Matches Endpoints

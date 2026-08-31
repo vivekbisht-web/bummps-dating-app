@@ -1756,6 +1756,6 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   }
 
   void editProfile() {
-    Get.toNamed(Routes.profileSetup);
+    Get.toNamed(Routes.editProfile);
   }
 }

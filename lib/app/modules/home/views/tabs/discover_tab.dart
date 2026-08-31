@@ -514,6 +514,8 @@ class _CircularActionButton extends StatelessWidget {
 }
 
 class _NoMoreProfilesView extends StatelessWidget {
+
+
   final HomeController controller;
   const _NoMoreProfilesView({required this.controller});
 

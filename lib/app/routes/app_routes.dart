@@ -9,6 +9,7 @@ abstract class Routes {
   static const login = _Paths.login;
   static const register = _Paths.register;
   static const profileSetup = _Paths.profileSetup;
+  static const editProfile = _Paths.editProfile;
   static const home = _Paths.home;
   static const chatDetail = _Paths.chatDetail;
   static const likedHistory = _Paths.likedHistory;
@@ -24,6 +25,7 @@ abstract class _Paths {
   static const login = '/login';
   static const register = '/register';
   static const profileSetup = '/profile-setup';
+  static const editProfile = '/edit-profile';
   static const home = '/home';
   static const chatDetail = '/chat-detail';
   static const likedHistory = '/liked-history';

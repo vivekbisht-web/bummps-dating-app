@@ -34,6 +34,11 @@ void main() async {
     
     final response = await dio.post(url, data: formData);
     print('Response status: ${response.statusCode}');
+    print('Response status: ${response.statusCode}');
+    print('Response status: ${response.statusCode}');
+    print('sdfdf status: ${response.statusCode}');
+    print('dsfdf: ${response.statusCode}');
+    print('Response status: ${response.statusCode}');
     print('Response body: ${response.data}');
   } on DioException catch (e) {
     print('Error response status: ${e.response?.statusCode}');
