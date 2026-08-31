@@ -62,6 +62,10 @@ class UserSubscription {
   final String? billingCycle;
   final DateTime? endDate;
   final bool isActive;
+  final bool isTrial;
+  final bool success;
+  final bool requiresSubscription;
+  final String? message;
 
   UserSubscription({
     required this.hasActiveSubscription,
@@ -70,21 +74,34 @@ class UserSubscription {
     this.billingCycle,
     this.endDate,
     required this.isActive,
+    this.isTrial = false,
+    this.success = true,
+    this.requiresSubscription = false,
+    this.message,
   });
 
   factory UserSubscription.fromJson(Map<String, dynamic> json) {
     final hasActive = json['hasActiveSubscription'] as bool? ?? false;
+    final success = json['success'] as bool? ?? true;
+    final requiresSub = json['requiresSubscription'] as bool? ?? false;
+    final msg = json['message'] as String?;
+    
     final sub = json['subscription'] as Map<String, dynamic>?;
     
     if (sub == null) {
       return UserSubscription(
         hasActiveSubscription: hasActive,
         isActive: false,
+        isTrial: false,
+        success: success,
+        requiresSubscription: requiresSub,
+        message: msg,
       );
     }
     
     final plan = sub['plan'] as Map<String, dynamic>?;
     final endStr = sub['endDate'] as String?;
+    final isTrialVal = sub['isTrial'] as bool? ?? false;
     
     return UserSubscription(
       hasActiveSubscription: hasActive,
@@ -93,6 +110,10 @@ class UserSubscription {
       billingCycle: sub['billingCycle'] as String?,
       endDate: endStr != null ? DateTime.tryParse(endStr) : null,
       isActive: sub['isActive'] as bool? ?? false,
+      isTrial: isTrialVal,
+      success: success,
+      requiresSubscription: requiresSub,
+      message: msg,
     );
   }
 }

@@ -4,8 +4,9 @@ import 'package:dio/dio.dart';
 class ApiException implements Exception {
   final String message;
   final int? statusCode;
+  final dynamic responseData;
 
-  ApiException({required this.message, this.statusCode});
+  ApiException({required this.message, this.statusCode, this.responseData});
 
   @override
   String toString() => message;
@@ -41,7 +42,11 @@ class ApiException implements Exception {
         break;
     }
 
-    return ApiException(message: message, statusCode: statusCode);
+    return ApiException(
+      message: message,
+      statusCode: statusCode,
+      responseData: dioException.response?.data,
+    );
   }
 
   static String _handleErrorResponse(Response? response) {

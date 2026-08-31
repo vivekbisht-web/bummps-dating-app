@@ -347,7 +347,7 @@ class ProfileSetupController extends GetxController {
                   style: AppTextStyles.headlineMedium.copyWith(color: AppColors.gold),
                 ),
                 content: Text(
-                  'Your premium Bummps profile is finalized and active. Welcome aboard!',
+                  'Your premium Bummps profile is finalized and active. Welcome aboard! As a new member, you have been granted a 1-month free trial with access to unlimited likes, superboost features, and more!',
                   style: AppTextStyles.bodyMedium,
                 ),
                 actions: [

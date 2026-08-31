@@ -211,87 +211,111 @@ class ProfileTab extends GetView<HomeController> {
               const SizedBox(height: 16),
 
               // --- BUMMPS Gold Upgrade Card ---
-              GestureDetector(
-                onTap: () => Get.toNamed(Routes.plans),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF2A2211),
-                        Color(0xFF16130C),
-                      ],
+              Obx(() {
+                final sub = controller.currentSubscription.value;
+                final bool hasSub = sub != null && sub.isActive;
+                final bool isTrial = sub != null && sub.isTrial;
+                
+                String title = 'BUMMPS Gold';
+                String desc = 'See who liked you & more';
+                String actionText = 'UPGRADE';
+                IconData badgeIcon = Icons.workspace_premium;
+                
+                if (hasSub) {
+                  actionText = 'MANAGE';
+                  if (isTrial) {
+                    title = 'Free Trial Active';
+                    desc = 'Unlimited likes & superboost active';
+                    badgeIcon = Icons.card_giftcard;
+                  } else {
+                    title = 'BUMMPS ${sub.planName ?? 'Premium'} Active';
+                    desc = 'Active subscription premium features';
+                    badgeIcon = Icons.verified;
+                  }
+                }
+                
+                return GestureDetector(
+                  onTap: () => Get.toNamed(Routes.plans),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFF2A2211),
+                          Color(0xFF16130C),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.gold.withOpacity(0.3), width: 1.0),
                     ),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.gold.withOpacity(0.3), width: 1.0),
-                  ),
-                  child: Row(
-                    children: [
-                      // Gold badge icon in a rounded square
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppColors.gold.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.gold.withOpacity(0.3)),
-                        ),
-                        child: const Icon(
-                          Icons.workspace_premium,
-                          color: AppColors.gold,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-
-                      // Title & Description
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'BUMMPS Gold',
-                              style: AppTextStyles.titleMedium.copyWith(
-                                color: AppColors.gold,
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'See who liked you & more',
-                              style: AppTextStyles.caption.copyWith(
-                                color: AppColors.textSecondary,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // UPGRADE action
-                      TextButton(
-                        onPressed: () => Get.toNamed(Routes.plans),
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: Text(
-                          'UPGRADE',
-                          style: AppTextStyles.button.copyWith(
+                    child: Row(
+                      children: [
+                        // Gold badge icon in a rounded square
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppColors.gold.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+                          ),
+                          child: Icon(
+                            badgeIcon,
                             color: AppColors.gold,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.5,
+                            size: 24,
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 16),
+
+                        // Title & Description
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                style: AppTextStyles.titleMedium.copyWith(
+                                  color: AppColors.gold,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                desc,
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // UPGRADE action
+                        TextButton(
+                          onPressed: () => Get.toNamed(Routes.plans),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text(
+                            actionText,
+                            style: AppTextStyles.button.copyWith(
+                              color: AppColors.gold,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ),
+                );
+              }),
               const SizedBox(height: 24),
 
               // --- Logout Button ---

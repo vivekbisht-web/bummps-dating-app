@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/network/dio_client.dart';
+import '../../core/services/network/dio_exception.dart';
 import '../models/login_response.dart';
 import '../models/user_profile.dart';
 import '../models/subscription_plan.dart';
@@ -199,18 +200,26 @@ class AuthProvider {
 
   /// Fetch user active subscription: GET /api/plans/subscription
   Future<UserSubscription> getMySubscription() async {
-    return await _dioClient.get<UserSubscription>(
-      AppConstants.mySubscription,
-      options: Options(
-        extra: {'suppressGlobalError': true},
-      ),
-      fromJson: (json) {
-        if (json is Map<String, dynamic>) {
-          return UserSubscription.fromJson(json);
-        }
-        return UserSubscription(hasActiveSubscription: false, isActive: false);
-      },
-    );
+    try {
+      return await _dioClient.get<UserSubscription>(
+        AppConstants.mySubscription,
+        options: Options(
+          extra: {'suppressGlobalError': true},
+        ),
+        fromJson: (json) {
+          if (json is Map<String, dynamic>) {
+            return UserSubscription.fromJson(json);
+          }
+          return UserSubscription(hasActiveSubscription: false, isActive: false);
+        },
+      );
+    } on ApiException catch (e) {
+      final data = e.responseData;
+      if (data is Map<String, dynamic> && (data['requiresSubscription'] == true || data['success'] == false)) {
+        return UserSubscription.fromJson(data);
+      }
+      rethrow;
+    }
   }
 
   // ---------------------------------------------------------------------------

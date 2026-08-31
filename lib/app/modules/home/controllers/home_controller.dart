@@ -158,6 +158,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   // Track pending operations for Razorpay callbacks
   String? _pendingRazorpayAction; // 'wallet_topup' or 'subscribe'
   String? _pendingPlanId;
+
+  bool _isSubscriptionDialogOpen = false;
+  bool _hasShownTrialWelcome = false;
   String? _pendingBillingCycle;
 
   // Circle Dashboard state
@@ -781,13 +784,99 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
       final sub = await authRepo.getMySubscription();
       debugPrint('[HomeController] Loaded user subscription from API. Has Active: ${sub.hasActiveSubscription}');
       currentSubscription.value = sub;
+      
       // Mirror subscription status to whoLikedMeSubscription
       if (sub.hasActiveSubscription && sub.isActive) {
         hasWhoLikedMeSubscription.value = true;
+      } else {
+        hasWhoLikedMeSubscription.value = false;
+      }
+
+      // Check if trial is active and welcome snackbar is needed
+      if (sub.isTrial && sub.isActive && !_hasShownTrialWelcome) {
+        _hasShownTrialWelcome = true;
+        Future.delayed(const Duration(seconds: 2), () {
+          AppSnackbar.showSuccess(
+            title: 'Free Trial Active!',
+            message: 'You have 1 month of unlimited likes, superboost features, and more!',
+          );
+        });
       }
     } catch (e) {
       debugPrint('[HomeController] Error loading user subscription: $e');
     }
+  }
+
+  void showSubscriptionRequiredDialog(String message) {
+    if (_isSubscriptionDialogOpen) return;
+    if (Get.currentRoute == Routes.plans) return;
+
+    _isSubscriptionDialogOpen = true;
+    Get.dialog(
+      WillPopScope(
+        onWillPop: () async => true, // Allow dismissing via physical back button
+        child: AlertDialog(
+          backgroundColor: AppColors.card,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: AppColors.gold, size: 28),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Access Suspended',
+                  style: AppTextStyles.titleMedium.copyWith(
+                    color: AppColors.gold,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            message,
+            style: AppTextStyles.bodyMedium.copyWith(color: Colors.white70),
+          ),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
+          actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          actions: [
+            TextButton(
+              onPressed: () {
+                _isSubscriptionDialogOpen = false;
+                Get.back(); // Dismiss dialog
+              },
+              child: Text(
+                'CLOSE',
+                style: AppTextStyles.button.copyWith(color: Colors.white54),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.gold,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              ),
+              onPressed: () {
+                _isSubscriptionDialogOpen = false;
+                Get.back(); // Dismiss dialog
+                Get.toNamed(Routes.plans);
+              },
+              child: Text(
+                'VIEW PLANS',
+                style: AppTextStyles.button.copyWith(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      barrierDismissible: true,
+    ).then((_) {
+      _isSubscriptionDialogOpen = false;
+    });
   }
 
   // ---------------------------------------------------------------------------
