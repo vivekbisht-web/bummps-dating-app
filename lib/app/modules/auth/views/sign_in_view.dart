@@ -223,7 +223,6 @@ class _LiveUsersCounterState extends State<_LiveUsersCounter>
     with SingleTickerProviderStateMixin {
   int _count = 0;
   Timer? _timer;
-  final Random _random = Random();
   AnimationController? _animationController;
   Animation<int>? _animation;
   int _targetCount = 23; // default fallback target
@@ -232,13 +231,14 @@ class _LiveUsersCounterState extends State<_LiveUsersCounter>
   void initState() {
     super.initState();
     // Start initial animation to our default target (23) immediately
-    _startAnimation(0, _targetCount);
-    // Fetch live user count from API
+    _animateToCount(0, _targetCount);
+    // Fetch live user count from API immediately
     _fetchLiveCount();
+    // Start polling every 15 seconds for real updates
+    _startPollingTimer();
   }
 
-  void _startAnimation(int begin, int end) {
-    _timer?.cancel();
+  void _animateToCount(int begin, int end) {
     _animationController?.dispose();
     _animationController = AnimationController(
       vsync: this,
@@ -251,13 +251,10 @@ class _LiveUsersCounterState extends State<_LiveUsersCounter>
       ),
     );
     _animation!.addListener(() {
-      setState(() {
-        _count = _animation!.value;
-      });
-    });
-    _animation!.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        _startFluctuationTimer();
+      if (mounted) {
+        setState(() {
+          _count = _animation!.value;
+        });
       }
     });
     _animationController!.forward();
@@ -279,26 +276,19 @@ class _LiveUsersCounterState extends State<_LiveUsersCounter>
           _targetCount = parsedCount;
           if (mounted) {
             // Animate from whatever the current count is, up/down to the newly fetched count
-            _startAnimation(_count, _targetCount);
+            _animateToCount(_count, _targetCount);
           }
         }
       }
     } catch (e) {
-      // Fail silently and keep the default animation/fluctuation
+      // Fail silently and keep the default animation
     }
   }
 
-  void _startFluctuationTimer() {
+  void _startPollingTimer() {
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (mounted) {
-        setState(() {
-          // Fluctuate count by a random offset (-3 to +4)
-          int delta = _random.nextInt(8) - 3;
-          _count += delta;
-          if (_count < 1) _count = 1;
-        });
-      }
+    _timer = Timer.periodic(const Duration(seconds: 15), (timer) {
+      _fetchLiveCount();
     });
   }
 
