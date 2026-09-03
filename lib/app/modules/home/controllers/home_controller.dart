@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math' show sqrt, min;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:get/get.dart';
 
 import '../../../routes/app_pages.dart';
@@ -809,48 +810,204 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
   /// Add money to wallet
   Future<void> addMoneyToWallet(double amount) async {
-    AppSnackbar.showInfo(
-      title: 'Wallet Top-up',
-      message: 'Payment gateway is currently being updated. Please try again later.',
-    );
+    try {
+      isAddingMoney.value = true;
+      final authRepo = Get.find<AuthRepository>();
+
+      final intentResponse = await authRepo.createWalletIntent(amount: amount, currency: 'usd');
+      debugPrint('[HomeController] createWalletIntent response: $intentResponse');
+
+      final rawData = (intentResponse['data'] is Map<String, dynamic>)
+          ? intentResponse['data'] as Map<String, dynamic>
+          : intentResponse;
+
+      final clientSecret = (rawData['clientSecret'] ?? rawData['client_secret'])?.toString();
+      final paymentIntentId = (rawData['paymentIntentId'] ?? rawData['payment_intent_id'] ?? rawData['id'])?.toString();
+
+      if (clientSecret == null || paymentIntentId == null) {
+        throw Exception('Invalid response from server: missing payment details');
+      }
+
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          paymentIntentClientSecret: clientSecret,
+          merchantDisplayName: AppConstants.stripeMerchantDisplayName,
+          style: ThemeMode.dark,
+          appearance: const PaymentSheetAppearance(
+            colors: PaymentSheetAppearanceColors(
+              background: Color(0xFF141416),
+              primary: Color(0xFFD4AF37),
+              primaryText: Colors.white,
+              secondaryText: Color(0xFF9E9E9E),
+              componentBackground: Color(0xFF1F1F23),
+              componentBorder: Color(0xFF333338),
+              componentDivider: Color(0xFF2A2A2E),
+              componentText: Colors.white,
+            ),
+          ),
+        ),
+      );
+
+      await Stripe.instance.presentPaymentSheet();
+
+      final verifyResponse = await authRepo.verifyWalletPayment(
+        paymentIntentId: paymentIntentId,
+      );
+      debugPrint('[HomeController] verifyWalletPayment response: $verifyResponse');
+
+      final isSuccess = verifyResponse['success'] == true ||
+          verifyResponse['status'] == 'success' ||
+          verifyResponse['status'] == 'succeeded';
+
+      if (isSuccess) {
+        AppSnackbar.showSuccess(
+          title: 'Payment Successful',
+          message: 'Money added to your wallet!',
+        );
+        await fetchWalletBalance();
+      } else {
+        AppSnackbar.showError(
+          title: 'Verification Failed',
+          message: verifyResponse['message']?.toString() ?? 'Could not verify payment.',
+        );
+      }
+    } on StripeException catch (e) {
+      debugPrint('[HomeController] Stripe error: ${e.error.localizedMessage}');
+      if (e.error.code == FailureCode.Canceled) {
+        debugPrint('[HomeController] Stripe payment cancelled by user');
+      } else {
+        AppSnackbar.showError(
+          title: 'Payment Failed',
+          message: e.error.localizedMessage ?? 'Payment could not be completed.',
+        );
+      }
+    } catch (e) {
+      debugPrint('[HomeController] Error adding money to wallet: $e');
+      AppSnackbar.showError(
+        title: 'Error',
+        message: 'Something went wrong: $e',
+      );
+    } finally {
+      isAddingMoney.value = false;
+    }
   }
 
   // ---------------------------------------------------------------------------
   // Subscription Purchase (Wallet)
   // ---------------------------------------------------------------------------
 
-  /// Purchase subscription using wallet balance
-  Future<bool> purchaseSubscription(String planId, String billingCycle) async {
+  /// Purchase subscription using wallet OR Stripe
+  Future<bool> purchaseSubscription(
+    String planId,
+    String billingCycle, {
+    String paymentMethod = 'wallet',
+  }) async {
     try {
       isSubmittingSubscription.value = true;
       final authRepo = Get.find<AuthRepository>();
       final response = await authRepo.subscribe(
         planId: planId,
         billingCycle: billingCycle,
-        paymentMethod: 'wallet',
+        paymentMethod: paymentMethod,
       );
-      
+
       debugPrint('[HomeController] Purchase subscription response: $response');
 
-      // Wallet payment — immediate result
-      if (response['success'] == true) {
+      // ---- WALLET PATH: immediate result ----
+      if (paymentMethod == 'wallet') {
+        if (response['success'] == true) {
+          AppSnackbar.showSuccess(
+            title: 'Subscription Active',
+            message: 'Successfully subscribed to plan!',
+          );
+          await fetchUserSubscription();
+          await fetchWalletBalance();
+          await loadWhoLikedMeProfiles();
+          return true;
+        } else {
+          AppSnackbar.showError(
+            title: 'Subscription Failed',
+            message: response['message']?.toString() ?? 'Failed to subscribe. Please try again.',
+          );
+          return false;
+        }
+      }
+
+      // ---- STRIPE PATH: needs PaymentSheet + verify ----
+      final rawData = (response['data'] is Map<String, dynamic>)
+          ? response['data'] as Map<String, dynamic>
+          : response;
+
+      final clientSecret = (rawData['clientSecret'] ?? rawData['client_secret'])?.toString();
+      final paymentIntentId = (rawData['paymentIntentId'] ?? rawData['payment_intent_id'] ?? rawData['id'])?.toString();
+
+      if (clientSecret == null || paymentIntentId == null) {
+        AppSnackbar.showError(
+          title: 'Subscription Failed',
+          message: 'Invalid response from server: missing payment details.',
+        );
+        return false;
+      }
+
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          paymentIntentClientSecret: clientSecret,
+          merchantDisplayName: AppConstants.stripeMerchantDisplayName,
+          style: ThemeMode.dark,
+          appearance: const PaymentSheetAppearance(
+            colors: PaymentSheetAppearanceColors(
+              background: Color(0xFF141416),
+              primary: Color(0xFFD4AF37),
+              primaryText: Colors.white,
+              secondaryText: Color(0xFF9E9E9E),
+              componentBackground: Color(0xFF1F1F23),
+              componentBorder: Color(0xFF333338),
+              componentDivider: Color(0xFF2A2A2E),
+              componentText: Colors.white,
+            ),
+          ),
+        ),
+      );
+
+      await Stripe.instance.presentPaymentSheet();
+
+      final verifyResponse = await authRepo.verifySubscriptionPayment(
+        paymentIntentId: paymentIntentId,
+        planId: planId,
+        billingCycle: billingCycle,
+      );
+
+      final isSuccess = verifyResponse['success'] == true ||
+          verifyResponse['status'] == 'success' ||
+          verifyResponse['status'] == 'succeeded';
+
+      if (isSuccess) {
         AppSnackbar.showSuccess(
           title: 'Subscription Active',
           message: 'Successfully subscribed to plan!',
         );
-        // Refresh subscription & wallet state
         await fetchUserSubscription();
         await fetchWalletBalance();
-        // Refresh who liked me profiles list
         await loadWhoLikedMeProfiles();
         return true;
       } else {
         AppSnackbar.showError(
-          title: 'Subscription Failed',
-          message: response['message']?.toString() ?? 'Failed to subscribe. Please try again.',
+          title: 'Verification Failed',
+          message: verifyResponse['message']?.toString() ?? 'Could not verify payment.',
         );
         return false;
       }
+    } on StripeException catch (e) {
+      debugPrint('[HomeController] Stripe error: ${e.error.localizedMessage}');
+      if (e.error.code == FailureCode.Canceled) {
+        debugPrint('[HomeController] Stripe subscription cancelled by user');
+      } else {
+        AppSnackbar.showError(
+          title: 'Payment Failed',
+          message: e.error.localizedMessage ?? 'Payment could not be completed.',
+        );
+      }
+      return false;
     } catch (e) {
       debugPrint('[HomeController] Error subscribing: $e');
       AppSnackbar.showError(
@@ -862,7 +1019,6 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
       isSubmittingSubscription.value = false;
     }
   }
-
   Map<String, dynamic> _mapUserProfileToLikedProfile(UserProfile up) {
     String picUrl = up.profilePic;
     if (picUrl.isEmpty) {

@@ -173,6 +173,24 @@ class AuthProvider {
     );
   }
 
+  Future<Map<String, dynamic>> verifySubscriptionPayment ({
+    required String paymentIntentId,
+    required String planId,
+    required String billingCycle,
+  }) async {
+    return await _dioClient.post<Map<String, dynamic>>  (
+      AppConstants.subscribeVerify,
+      data:  {
+        'paymentIntentId' : paymentIntentId,
+        'planId' : planId,
+        'billingCycle' : billingCycle,
+      },
+      fromJson: (json) {
+        if (json is Map<String,dynamic>) return json;
+        return {};
+      },
+    );
+  }
   /// Fetch user active subscription: GET /api/plans/subscription
   Future<UserSubscription> getMySubscription() async {
     try {
@@ -217,6 +235,38 @@ class AuthProvider {
     );
   }
 
+
+  Future<Map<String, dynamic>> createWalletIntent({
+    required double amount,
+    String currency ='usd',
+}) async {
+    return await _dioClient.post<Map<String, dynamic>> (
+      AppConstants.walletCreateIntent,
+      data: {
+        'amount' : amount,
+        'currency' : currency,
+      },
+      fromJson: (json) {
+        if (json is Map<String, dynamic>) return json;
+        return {};
+      }
+    );
+  }
+
+  Future<Map<String, dynamic>> verifyWalletPayment ({
+    required String paymentIntentId,
+}) async {
+    return await _dioClient.post<Map<String, dynamic>> (
+    AppConstants.walletVerify,
+    data: {
+      'paymentIntentId': paymentIntentId,
+    },
+      fromJson: (json) {
+      if (json is Map<String,dynamic>) return json;
+      return {};
+      }
+    );
+  }
 
   /// Send a like action — POST /api/matches/like  { "targetUserId": id }
   Future<Map<String, dynamic>> likeUser(String targetUserId) async {

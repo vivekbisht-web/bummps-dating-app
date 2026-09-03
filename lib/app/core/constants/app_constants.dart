@@ -29,10 +29,13 @@ class AppConstants {
   // Plans Endpoints
   static const String allPlans = 'plans/allplans';
   static const String subscribe = 'plans/subscribe';
+  static const String subscribeVerify = 'plans/subscribe/verify';
   static const String mySubscription = 'plans/subscription';
 
   // Wallet Endpoints
   static const String walletBalance = 'plans/wallet';
+  static const String walletCreateIntent = 'plans/wallet/create-intent';
+  static const String walletVerify = 'plans/wallet/verify';
 
   // Circle Endpoints
   static const String circleDashboard = 'circle/dashboard';
@@ -40,4 +43,7 @@ class AppConstants {
   static const String circleDiscussions = 'circle/discussions';
   static const String circleConnect = 'circle/connect';
 
+  // Stripe Configuration
+  static const String stripePublishableKey = 'pk_test_xxxxxxxxxxxxxxxxxxxx';
+  static const String stripeMerchantDisplayName = 'Bummps';
 }

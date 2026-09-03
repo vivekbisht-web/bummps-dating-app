@@ -815,6 +815,24 @@ class _PlansViewState extends State<PlansView> {
                   },
                 );
               }),
+
+              const SizedBox(height: 16),
+
+              // Stripe/Card Option 🆕
+              _buildPaymentOption(
+                icon: Icons.credit_card,
+                title: 'Pay with Card',
+                subtitle: 'Pay securely via Stripe',
+                enabled: true,
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  controller.purchaseSubscription(
+                    planId,
+                    billingCycle,
+                    paymentMethod: 'stripe',
+                  );
+                },
+              ),
               const SizedBox(height: 24),
             ],
           ),

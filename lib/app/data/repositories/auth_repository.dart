@@ -94,6 +94,18 @@ class AuthRepository {
       paymentMethod: paymentMethod,
     );
   }
+  /// Verify Stripe subscription payment
+  Future<Map<String, dynamic>> verifySubscriptionPayment({
+    required String paymentIntentId,
+    required String planId,
+    required String billingCycle,
+  }) async {
+    return await _authProvider.verifySubscriptionPayment(
+      paymentIntentId: paymentIntentId,
+      planId: planId,
+      billingCycle: billingCycle,
+    );
+  }
 
   /// Fetch user active subscription
   Future<UserSubscription> getMySubscription() async {
@@ -169,6 +181,21 @@ class AuthRepository {
   /// Rewind (undo) the last swipe — sends the last swiped user's ID.
   Future<Map<String, dynamic>> rewindSwipe(String targetUserId) async {
     return await _authProvider.rewindSwipe(targetUserId);
+  }
+
+  /// Create Stripe payment intent for wallet top-up
+  Future<Map<String, dynamic>> createWalletIntent ({
+    required double amount,
+    String currency = 'usd',
+  }) async {
+    return await _authProvider.createWalletIntent(amount: amount, currency: currency);
+  }
+
+  /// Verify wallet payment
+  Future<Map<String, dynamic>> verifyWalletPayment ({
+    required String paymentIntentId,
+}) async {
+    return await _authProvider.verifyWalletPayment(paymentIntentId: paymentIntentId);
   }
 
   /// Submit support request: POST /api/auth/help-support
