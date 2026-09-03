@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
+  import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/bummps_logo.dart';
 import '../../../routes/app_pages.dart';
 import '../controllers/home_controller.dart';
 
@@ -27,11 +28,7 @@ class _PlansViewState extends State<PlansView> {
           icon: const Icon(Icons.arrow_back, color: AppColors.gold, size: 22),
           onPressed: () => Get.back(),
         ),
-        title: Image.asset(
-          'assets/images/bummps..png',
-          height: 18,
-          fit: BoxFit.contain,
-        ),
+        title: const BummpsLogo(compact: true),
         centerTitle: true,
         automaticallyImplyLeading: false,
       ),
