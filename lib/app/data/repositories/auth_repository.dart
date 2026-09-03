@@ -95,23 +95,6 @@ class AuthRepository {
     );
   }
 
-  /// Verify Razorpay subscription payment
-  Future<Map<String, dynamic>> verifySubscription({
-    required String razorpayOrderId,
-    required String razorpayPaymentId,
-    required String razorpaySignature,
-    required String planId,
-    required String billingCycle,
-  }) async {
-    return await _authProvider.verifySubscription(
-      razorpayOrderId: razorpayOrderId,
-      razorpayPaymentId: razorpayPaymentId,
-      razorpaySignature: razorpaySignature,
-      planId: planId,
-      billingCycle: billingCycle,
-    );
-  }
-
   /// Fetch user active subscription
   Future<UserSubscription> getMySubscription() async {
     return await _authProvider.getMySubscription();
@@ -120,24 +103,6 @@ class AuthRepository {
   // ---------------------------------------------------------------------------
   // Wallet
   // ---------------------------------------------------------------------------
-
-  /// Create a Razorpay order for wallet top-up
-  Future<RazorpayOrder> createWalletOrder(double amount) async {
-    return await _authProvider.createWalletOrder(amount);
-  }
-
-  /// Verify wallet Razorpay payment
-  Future<Map<String, dynamic>> verifyWalletPayment({
-    required String razorpayOrderId,
-    required String razorpayPaymentId,
-    required String razorpaySignature,
-  }) async {
-    return await _authProvider.verifyWalletPayment(
-      razorpayOrderId: razorpayOrderId,
-      razorpayPaymentId: razorpayPaymentId,
-      razorpaySignature: razorpaySignature,
-    );
-  }
 
   /// Get wallet balance
   Future<WalletBalance> getWalletBalance() async {

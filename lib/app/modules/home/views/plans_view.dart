@@ -811,23 +811,10 @@ class _PlansViewState extends State<PlansView> {
                   enabled: hasEnough,
                   onTap: () {
                     Navigator.of(ctx).pop();
-                    controller.purchaseSubscription(planId, billingCycle, paymentMethod: 'wallet');
+                    controller.purchaseSubscription(planId, billingCycle);
                   },
                 );
               }),
-              const SizedBox(height: 12),
-
-              // Razorpay Option
-              _buildPaymentOption(
-                icon: Icons.credit_card,
-                title: 'Pay with Razorpay',
-                subtitle: 'UPI, Card, Net Banking & more',
-                enabled: true,
-                onTap: () {
-                  Navigator.of(ctx).pop();
-                  controller.purchaseSubscription(planId, billingCycle, paymentMethod: 'razorpay');
-                },
-              ),
               const SizedBox(height: 24),
             ],
           ),
