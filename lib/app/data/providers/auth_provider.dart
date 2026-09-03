@@ -133,10 +133,13 @@ class AuthProvider {
     );
   }
 
-  /// Get all subscription plans: GET /api/plans
+  /// Get all subscription plans: GET /api/plans/allplans
   Future<List<SubscriptionPlan>> getAllPlans() async {
     return await _dioClient.get<List<SubscriptionPlan>>(
       AppConstants.allPlans,
+      options: Options(
+        extra: {'requiresAuth': false},
+      ),
       fromJson: (json) {
         List<dynamic>? list;
         if (json is List) {
@@ -265,6 +268,24 @@ class AuthProvider {
       if (json is Map<String,dynamic>) return json;
       return {};
       }
+    );
+  }
+
+  /// Report payment failure: POST /api/plans/payment-failed
+  Future<Map<String, dynamic>> reportPaymentFailed({
+    required String paymentIntentId,
+    required String reason,
+  }) async {
+    return await _dioClient.post<Map<String, dynamic>>(
+      AppConstants.paymentFailed,
+      data: {
+        'paymentIntentId': paymentIntentId,
+        'reason': reason,
+      },
+      fromJson: (json) {
+        if (json is Map<String, dynamic>) return json;
+        return {};
+      },
     );
   }
 

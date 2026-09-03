@@ -810,6 +810,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
   /// Add money to wallet
   Future<void> addMoneyToWallet(double amount) async {
+    String? currentPaymentIntentId;
     try {
       isAddingMoney.value = true;
       final authRepo = Get.find<AuthRepository>();
@@ -823,6 +824,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
       final clientSecret = (rawData['clientSecret'] ?? rawData['client_secret'])?.toString();
       final paymentIntentId = (rawData['paymentIntentId'] ?? rawData['payment_intent_id'] ?? rawData['id'])?.toString();
+      currentPaymentIntentId = paymentIntentId;
 
       if (clientSecret == null || paymentIntentId == null) {
         throw Exception('Invalid response from server: missing payment details');
@@ -866,23 +868,53 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
         );
         await fetchWalletBalance();
       } else {
+        final reason = verifyResponse['message']?.toString() ?? 'Could not verify payment.';
+        if (currentPaymentIntentId != null) {
+          authRepo.reportPaymentFailed(
+            paymentIntentId: currentPaymentIntentId,
+            reason: reason,
+          );
+        }
         AppSnackbar.showError(
           title: 'Verification Failed',
-          message: verifyResponse['message']?.toString() ?? 'Could not verify payment.',
+          message: reason,
         );
       }
     } on StripeException catch (e) {
       debugPrint('[HomeController] Stripe error: ${e.error.localizedMessage}');
+      final reason = e.error.localizedMessage ?? e.error.message ?? 'Payment cancelled or failed';
+      if (currentPaymentIntentId != null) {
+        try {
+          final authRepo = Get.find<AuthRepository>();
+          await authRepo.reportPaymentFailed(
+            paymentIntentId: currentPaymentIntentId,
+            reason: reason,
+          );
+        } catch (err) {
+          debugPrint('[HomeController] Error calling payment-failed: $err');
+        }
+      }
       if (e.error.code == FailureCode.Canceled) {
         debugPrint('[HomeController] Stripe payment cancelled by user');
       } else {
         AppSnackbar.showError(
           title: 'Payment Failed',
-          message: e.error.localizedMessage ?? 'Payment could not be completed.',
+          message: reason,
         );
       }
     } catch (e) {
       debugPrint('[HomeController] Error adding money to wallet: $e');
+      if (currentPaymentIntentId != null) {
+        try {
+          final authRepo = Get.find<AuthRepository>();
+          await authRepo.reportPaymentFailed(
+            paymentIntentId: currentPaymentIntentId,
+            reason: e.toString(),
+          );
+        } catch (err) {
+          debugPrint('[HomeController] Error calling payment-failed: $err');
+        }
+      }
       AppSnackbar.showError(
         title: 'Error',
         message: 'Something went wrong: $e',
@@ -902,6 +934,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     String billingCycle, {
     String paymentMethod = 'wallet',
   }) async {
+    String? currentPaymentIntentId;
     try {
       isSubmittingSubscription.value = true;
       final authRepo = Get.find<AuthRepository>();
@@ -940,6 +973,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
       final clientSecret = (rawData['clientSecret'] ?? rawData['client_secret'])?.toString();
       final paymentIntentId = (rawData['paymentIntentId'] ?? rawData['payment_intent_id'] ?? rawData['id'])?.toString();
+      currentPaymentIntentId = paymentIntentId;
 
       if (clientSecret == null || paymentIntentId == null) {
         AppSnackbar.showError(
@@ -991,25 +1025,55 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
         await loadWhoLikedMeProfiles();
         return true;
       } else {
+        final reason = verifyResponse['message']?.toString() ?? 'Could not verify payment.';
+        if (currentPaymentIntentId != null) {
+          authRepo.reportPaymentFailed(
+            paymentIntentId: currentPaymentIntentId,
+            reason: reason,
+          );
+        }
         AppSnackbar.showError(
           title: 'Verification Failed',
-          message: verifyResponse['message']?.toString() ?? 'Could not verify payment.',
+          message: reason,
         );
         return false;
       }
     } on StripeException catch (e) {
       debugPrint('[HomeController] Stripe error: ${e.error.localizedMessage}');
+      final reason = e.error.localizedMessage ?? e.error.message ?? 'Subscription payment cancelled or failed';
+      if (currentPaymentIntentId != null) {
+        try {
+          final authRepo = Get.find<AuthRepository>();
+          await authRepo.reportPaymentFailed(
+            paymentIntentId: currentPaymentIntentId,
+            reason: reason,
+          );
+        } catch (err) {
+          debugPrint('[HomeController] Error calling payment-failed: $err');
+        }
+      }
       if (e.error.code == FailureCode.Canceled) {
         debugPrint('[HomeController] Stripe subscription cancelled by user');
       } else {
         AppSnackbar.showError(
           title: 'Payment Failed',
-          message: e.error.localizedMessage ?? 'Payment could not be completed.',
+          message: reason,
         );
       }
       return false;
     } catch (e) {
       debugPrint('[HomeController] Error subscribing: $e');
+      if (currentPaymentIntentId != null) {
+        try {
+          final authRepo = Get.find<AuthRepository>();
+          await authRepo.reportPaymentFailed(
+            paymentIntentId: currentPaymentIntentId,
+            reason: e.toString(),
+          );
+        } catch (err) {
+          debugPrint('[HomeController] Error calling payment-failed: $err');
+        }
+      }
       AppSnackbar.showError(
         title: 'Subscription Error',
         message: 'An error occurred while subscribing: $e',

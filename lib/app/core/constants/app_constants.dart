@@ -31,6 +31,7 @@ class AppConstants {
   static const String subscribe = 'plans/subscribe';
   static const String subscribeVerify = 'plans/subscribe/verify';
   static const String mySubscription = 'plans/subscription';
+  static const String paymentFailed = 'plans/payment-failed';
 
   // Wallet Endpoints
   static const String walletBalance = 'plans/wallet';
@@ -44,6 +45,6 @@ class AppConstants {
   static const String circleConnect = 'circle/connect';
 
   // Stripe Configuration
-  static const String stripePublishableKey = 'pk_test_xxxxxxxxxxxxxxxxxxxx';
+  static const String stripePublishableKey = 'pk_live_51RkbSqQK1GBlP0oYYaQgzsyuZF8A1uMZSEh5RROWtxXV6dnzJT3q82ELPllZJPSPzAdwozXsnnYcrRY5Ivz8kkHN00DjsQgv7k';
   static const String stripeMerchantDisplayName = 'Bummps';
 }

@@ -198,6 +198,17 @@ class AuthRepository {
     return await _authProvider.verifyWalletPayment(paymentIntentId: paymentIntentId);
   }
 
+  /// Report failed payment intent: POST /api/plans/payment-failed
+  Future<Map<String, dynamic>> reportPaymentFailed({
+    required String paymentIntentId,
+    required String reason,
+  }) async {
+    return await _authProvider.reportPaymentFailed(
+      paymentIntentId: paymentIntentId,
+      reason: reason,
+    );
+  }
+
   /// Submit support request: POST /api/auth/help-support
   Future<Map<String, dynamic>> submitHelpSupport({
     required String subject,
