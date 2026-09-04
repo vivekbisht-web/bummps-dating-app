@@ -1,12 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/bummps_logo.dart';
 import '../../../routes/app_pages.dart';
 import '../../home/controllers/home_controller.dart';
 import '../../../data/models/subscription_plan.dart';
+
+// -----------------------------------------------------------------------------
+// Scoped Luxury Midnight & Champagne Gold Color Palette for Plans Screen Only
+// -----------------------------------------------------------------------------
+class _PlanColors {
+  _PlanColors._();
+
+  // Pure dark background matching luxury obsidian theme
+  static const Color background = Color(0xFF000000);
+  static const Color cardBg = Color(0xFF0D0C0A);
+  static const Color cardBorder = Color(0xFF241F18);
+  static const Color cardBorderHover = Color(0xFFE5B869);
+
+  // Warm Champagne & Honey Gold
+  static const Color gold = Color(0xFFE5B869);
+  static const Color goldLight = Color(0xFFF3CD85);
+  static const Color goldDark = Color(0xFFC99843);
+  static const Color onGold = Color(0xFF14110C);
+
+  // Typography & Text
+  static const Color textPrimary = Color(0xFFFFFFFF);
+  static const Color textHighlight = Color(0xFFDDD5C8);
+  static const Color textMuted = Color(0xFF8A7F71);
+  static const Color textDark = Color(0xFF5E5448);
+  static const Color textLegal = Color(0xFF6B6256);
+
+  // Checkmark circles & icons
+  static const Color checkBgActive = Color(0xFF261F13);
+  static const Color checkBorderActive = Color(0xFF524024);
+  static const Color checkIconActive = Color(0xFFE5B869);
+
+  static const Color checkBgInactive = Color(0xFF1B1711);
+  static const Color checkBorderInactive = Color(0xFF2E261A);
+  static const Color checkIconInactive = Color(0xFF8C734B);
+
+  // Toggle & sheets
+  static const Color toggleBg = Color(0xFF141210);
+  static const Color sheetBg = Color(0xFF12100E);
+  static const Color sheetOptionBg = Color(0xFF181512);
+  static const Color divider = Color(0xFF262017);
+  static const Color badgeDarkBg = Color(0xFF2A2012);
+  static const Color badgeGoldBg = Color(0xFF1A140A);
+}
 
 class PlansView extends StatefulWidget {
   const PlansView({super.key});
@@ -43,19 +84,27 @@ class _PlansViewState extends State<PlansView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: _PlanColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.gold, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _PlanColors.gold, size: 20),
           onPressed: () => Get.back(),
         ),
-        title: const BummpsLogo(compact: true),
+        title: Image.asset(
+          'assets/images/bummps-icon.png',
+          height: 34,
+          fit: BoxFit.contain,
+        ),
         centerTitle: true,
         automaticallyImplyLeading: false,
-        actions: const [
-          SizedBox(width: 48),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.close_rounded, color: _PlanColors.gold, size: 24),
+            onPressed: () => Get.back(),
+          ),
+          const SizedBox(width: 4),
         ],
       ),
       body: SafeArea(
@@ -74,8 +123,8 @@ class _PlansViewState extends State<PlansView> {
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        AppColors.gold.withOpacity(0.18),
-                        AppColors.goldDark.withOpacity(0.07),
+                        _PlanColors.gold.withOpacity(0.18),
+                        _PlanColors.goldDark.withOpacity(0.06),
                         Colors.transparent,
                       ],
                       stops: const [0.0, 0.45, 1.0],
@@ -87,8 +136,8 @@ class _PlansViewState extends State<PlansView> {
 
             // --- Main Content ---
             RefreshIndicator(
-              color: AppColors.gold,
-              backgroundColor: AppColors.surface,
+              color: _PlanColors.gold,
+              backgroundColor: _PlanColors.sheetBg,
               onRefresh: _handleRefresh,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -102,7 +151,7 @@ class _PlansViewState extends State<PlansView> {
                     Center(
                       child: CustomPaint(
                         size: const Size(44, 32),
-                        painter: _CrownPainter(color: AppColors.gold),
+                        painter: _CrownPainter(color: _PlanColors.gold),
                       ),
                     ),
                     const SizedBox(height: 18),
@@ -112,7 +161,7 @@ class _PlansViewState extends State<PlansView> {
                       child: Text(
                         'Choose Your Plan',
                         style: AppTextStyles.headlineMedium.copyWith(
-                          color: AppColors.gold,
+                          color: _PlanColors.gold,
                           fontSize: 26,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.3,
@@ -127,7 +176,7 @@ class _PlansViewState extends State<PlansView> {
                           'Pick the plan that fits how you date',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: Color(0xFF9E9A90),
+                            color: _PlanColors.textMuted,
                             fontSize: 14,
                             letterSpacing: 0.2,
                           ),
@@ -140,9 +189,9 @@ class _PlansViewState extends State<PlansView> {
                     Container(
                       height: 52,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF141416),
+                        color: _PlanColors.toggleBg,
                         borderRadius: BorderRadius.circular(26),
-                        border: Border.all(color: AppColors.divider),
+                        border: Border.all(color: _PlanColors.cardBorder),
                       ),
                       padding: const EdgeInsets.all(4),
                       child: Row(
@@ -157,14 +206,14 @@ class _PlansViewState extends State<PlansView> {
                               },
                               child: Container(
                                 decoration: BoxDecoration(
-                                  color: isMonthly ? AppColors.gold : Colors.transparent,
+                                  color: isMonthly ? _PlanColors.gold : Colors.transparent,
                                   borderRadius: BorderRadius.circular(22),
                                 ),
                                 child: Center(
                                   child: Text(
                                     'MONTHLY',
                                     style: TextStyle(
-                                      color: isMonthly ? AppColors.onGold : AppColors.textSecondary,
+                                      color: isMonthly ? _PlanColors.onGold : _PlanColors.textMuted,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
                                       letterSpacing: 0.5,
@@ -184,7 +233,7 @@ class _PlansViewState extends State<PlansView> {
                               },
                               child: Container(
                                 decoration: BoxDecoration(
-                                  color: !isMonthly ? AppColors.gold : Colors.transparent,
+                                  color: !isMonthly ? _PlanColors.gold : Colors.transparent,
                                   borderRadius: BorderRadius.circular(22),
                                 ),
                                 child: Row(
@@ -193,7 +242,7 @@ class _PlansViewState extends State<PlansView> {
                                     Text(
                                       'ANNUAL',
                                       style: TextStyle(
-                                        color: !isMonthly ? AppColors.onGold : AppColors.textSecondary,
+                                        color: !isMonthly ? _PlanColors.onGold : _PlanColors.textMuted,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 12,
                                         letterSpacing: 0.5,
@@ -203,14 +252,14 @@ class _PlansViewState extends State<PlansView> {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                                       decoration: BoxDecoration(
-                                        color: isMonthly ? const Color(0xFF2C2414) : const Color(0xFF1A1400),
+                                        color: isMonthly ? _PlanColors.badgeDarkBg : _PlanColors.badgeGoldBg,
                                         borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(color: AppColors.gold, width: 0.5),
+                                        border: Border.all(color: _PlanColors.gold, width: 0.5),
                                       ),
                                       child: const Text(
                                         'SAVE 40%',
                                         style: TextStyle(
-                                          color: AppColors.gold,
+                                          color: _PlanColors.gold,
                                           fontSize: 8,
                                           fontWeight: FontWeight.bold,
                                           height: 1.0,
@@ -234,7 +283,7 @@ class _PlansViewState extends State<PlansView> {
                         return const Center(
                           child: Padding(
                             padding: EdgeInsets.all(40.0),
-                            child: CircularProgressIndicator(color: AppColors.gold),
+                            child: CircularProgressIndicator(color: _PlanColors.gold),
                           ),
                         );
                       }
@@ -245,7 +294,7 @@ class _PlansViewState extends State<PlansView> {
                             padding: EdgeInsets.all(20.0),
                             child: Text(
                               'No plans available at the moment.',
-                              style: TextStyle(color: AppColors.textSecondary),
+                              style: TextStyle(color: _PlanColors.textMuted),
                             ),
                           ),
                         );
@@ -317,16 +366,16 @@ class _PlansViewState extends State<PlansView> {
                       margin: const EdgeInsets.only(bottom: 16),
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
+                        color: _PlanColors.cardBg,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.divider),
+                        border: Border.all(color: _PlanColors.cardBorder),
                       ),
                       child: Column(
                         children: [
                           Text(
                             'Concierge Support',
                             style: AppTextStyles.titleMedium.copyWith(
-                              color: AppColors.gold,
+                              color: _PlanColors.gold,
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
@@ -336,7 +385,7 @@ class _PlansViewState extends State<PlansView> {
                             'Exclusively for Pro & Premium members: A dedicated lifestyle assistant to help you curate your profile and prepare for the perfect first encounter.',
                             textAlign: TextAlign.center,
                             style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.textSecondary,
+                              color: _PlanColors.textMuted,
                               fontSize: 13,
                               height: 1.45,
                             ),
@@ -347,7 +396,7 @@ class _PlansViewState extends State<PlansView> {
                             height: 140,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: AppColors.gold, width: 2.0),
+                              border: Border.all(color: _PlanColors.gold, width: 2.0),
                             ),
                             padding: const EdgeInsets.all(3),
                             child: ClipRRect(
@@ -391,7 +440,7 @@ class _PlansViewState extends State<PlansView> {
                         'Subscription will automatically renew at the end of the selected period. You can cancel at any time in your account settings.\n© 2026 SoulSync International. All rights reserved.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: AppColors.textMuted,
+                          color: _PlanColors.textLegal,
                           fontSize: 9,
                           height: 1.4,
                         ),
@@ -489,38 +538,38 @@ class _PlansViewState extends State<PlansView> {
                 curve: Curves.easeInOut,
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF131315),
+                  color: _PlanColors.cardBg,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
                     color: isHighlighted
-                        ? AppColors.gold
-                        : const Color(0xFF262420),
+                        ? _PlanColors.cardBorderHover
+                        : _PlanColors.cardBorder,
                     width: isHighlighted ? 1.8 : 1.0,
                   ),
                   boxShadow: isHighlighted
                       ? [
-                          // Outer wide gold aura / neon diffusion
+                          // Outer wide gold aura / diffusion
                           BoxShadow(
-                            color: AppColors.gold.withOpacity(0.42),
-                            blurRadius: 36,
-                            spreadRadius: 3.0,
+                            color: _PlanColors.gold.withOpacity(0.35),
+                            blurRadius: 32,
+                            spreadRadius: 2.0,
                             offset: Offset.zero,
                           ),
-                          // Medium intense luminous gold ring
+                          // Medium luminous gold glow
                           BoxShadow(
-                            color: AppColors.gold.withOpacity(0.60),
-                            blurRadius: 18,
-                            spreadRadius: 1.5,
+                            color: _PlanColors.gold.withOpacity(0.50),
+                            blurRadius: 16,
+                            spreadRadius: 1.0,
                             offset: Offset.zero,
                           ),
                           // Tight crisp gold edge halo
                           BoxShadow(
-                            color: AppColors.goldLight.withOpacity(0.50),
-                            blurRadius: 6,
+                            color: _PlanColors.goldLight.withOpacity(0.40),
+                            blurRadius: 5,
                             spreadRadius: 0.5,
                             offset: Offset.zero,
                           ),
-                          // Deep drop shadow for elevation
+                          // Deep drop shadow
                           BoxShadow(
                             color: Colors.black.withOpacity(0.6),
                             blurRadius: 20,
@@ -545,7 +594,7 @@ class _PlansViewState extends State<PlansView> {
                               Text(
                                 displayName,
                                 style: TextStyle(
-                                  color: isHighlighted ? AppColors.gold : Colors.white,
+                                  color: isHighlighted ? _PlanColors.gold : Colors.white,
                                   fontSize: 22,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 0.2,
@@ -559,7 +608,7 @@ class _PlansViewState extends State<PlansView> {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
-                                      color: Color(0xFF8E8A82),
+                                      color: _PlanColors.textMuted,
                                       fontSize: 13,
                                       fontWeight: FontWeight.w400,
                                     ),
@@ -576,8 +625,8 @@ class _PlansViewState extends State<PlansView> {
                           children: [
                             Text(
                               '\$${price.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                color: isHighlighted ? AppColors.gold : Colors.white,
+                              style: const TextStyle(
+                                color: _PlanColors.gold,
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -586,7 +635,7 @@ class _PlansViewState extends State<PlansView> {
                             Text(
                               isMonthly ? '/month' : '/mo',
                               style: const TextStyle(
-                                color: Color(0xFF8E8A82),
+                                color: _PlanColors.textMuted,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w400,
                               ),
@@ -602,7 +651,7 @@ class _PlansViewState extends State<PlansView> {
                         child: Text(
                           '\$${(price * 12).toStringAsFixed(2)} billed annually',
                           style: const TextStyle(
-                            color: Color(0xFF8E8A82),
+                            color: _PlanColors.textMuted,
                             fontSize: 11,
                             fontWeight: FontWeight.w400,
                           ),
@@ -623,7 +672,7 @@ class _PlansViewState extends State<PlansView> {
                         padding: EdgeInsets.symmetric(vertical: 8.0),
                         child: Text(
                           'All standard membership benefits',
-                          style: TextStyle(color: Color(0xFFDDD8D0), fontSize: 14),
+                          style: TextStyle(color: _PlanColors.textHighlight, fontSize: 14),
                         ),
                       ),
 
@@ -636,17 +685,17 @@ class _PlansViewState extends State<PlansView> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isCurrentPlan
                               ? const Color(0xFF1E1E22)
-                              : (isHighlighted ? AppColors.gold : const Color(0xFF221F1A)),
+                              : (isHighlighted ? _PlanColors.gold : const Color(0xFF1E1A14)),
                           foregroundColor: isCurrentPlan
-                              ? AppColors.gold
-                              : (isHighlighted ? const Color(0xFF141416) : AppColors.gold),
+                              ? _PlanColors.gold
+                              : (isHighlighted ? _PlanColors.onGold : _PlanColors.gold),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                             side: isCurrentPlan
-                                ? BorderSide(color: AppColors.gold.withOpacity(0.4), width: 1)
+                                ? BorderSide(color: _PlanColors.gold.withOpacity(0.4), width: 1)
                                 : (isHighlighted
                                     ? BorderSide.none
-                                    : BorderSide(color: AppColors.gold.withOpacity(0.35), width: 1)),
+                                    : BorderSide(color: _PlanColors.gold.withOpacity(0.35), width: 1)),
                           ),
                           minimumSize: const Size.fromHeight(48),
                           elevation: isHighlighted ? 2 : 0,
@@ -668,15 +717,15 @@ class _PlansViewState extends State<PlansView> {
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: isHighlighted ? const Color(0xFF141416) : AppColors.gold,
+                                  color: isHighlighted ? _PlanColors.onGold : _PlanColors.gold,
                                 ),
                               )
                             : Text(
                                 isCurrentPlan ? 'YOUR CURRENT PLAN' : 'SUBSCRIBE NOW',
                                 style: TextStyle(
                                   color: isCurrentPlan
-                                      ? AppColors.gold
-                                      : (isHighlighted ? const Color(0xFF141416) : AppColors.gold),
+                                      ? _PlanColors.gold
+                                      : (isHighlighted ? _PlanColors.onGold : _PlanColors.gold),
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 0.8,
@@ -696,7 +745,7 @@ class _PlansViewState extends State<PlansView> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4.5),
                     decoration: BoxDecoration(
-                      color: AppColors.gold,
+                      color: _PlanColors.gold,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
@@ -709,7 +758,7 @@ class _PlansViewState extends State<PlansView> {
                     child: const Text(
                       'MOST POPULAR',
                       style: TextStyle(
-                        color: Color(0xFF141416),
+                        color: _PlanColors.onGold,
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.8,
@@ -740,17 +789,22 @@ class _PlansViewState extends State<PlansView> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: isHighlighted
-                  ? (isIncluded ? const Color(0xFF282216) : const Color(0xFF1E1E22))
-                  : const Color(0xFF19191C),
-              border: isHighlighted && isIncluded
-                  ? Border.all(color: AppColors.gold.withOpacity(0.35), width: 0.8)
+                  ? (isIncluded ? _PlanColors.checkBgActive : const Color(0xFF1E1E22))
+                  : (isIncluded ? _PlanColors.checkBgInactive : const Color(0xFF161412)),
+              border: isIncluded
+                  ? Border.all(
+                      color: isHighlighted
+                          ? _PlanColors.checkBorderActive
+                          : _PlanColors.checkBorderInactive,
+                      width: 0.8,
+                    )
                   : null,
             ),
             child: Icon(
               isIncluded ? Icons.check : Icons.close,
               color: isHighlighted
-                  ? (isIncluded ? AppColors.gold : Colors.white24)
-                  : (isIncluded ? const Color(0xFF6E6A60) : Colors.white24),
+                  ? (isIncluded ? _PlanColors.checkIconActive : Colors.white24)
+                  : (isIncluded ? _PlanColors.checkIconInactive : Colors.white24),
               size: 13,
             ),
           ),
@@ -760,7 +814,7 @@ class _PlansViewState extends State<PlansView> {
               text,
               style: TextStyle(
                 color: isIncluded
-                    ? (isHighlighted ? const Color(0xFFDDD8D0) : const Color(0xFF9E9A90))
+                    ? (isHighlighted ? _PlanColors.textHighlight : _PlanColors.textMuted)
                     : Colors.white38,
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
@@ -784,12 +838,12 @@ class _PlansViewState extends State<PlansView> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF1E1C18), Color(0xFF2A2520)],
+            colors: [Color(0xFF1A1713), Color(0xFF241F18)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.gold.withOpacity(0.3), width: 1.2),
+          border: Border.all(color: _PlanColors.gold.withOpacity(0.3), width: 1.2),
         ),
         child: Row(
           children: [
@@ -798,10 +852,10 @@ class _PlansViewState extends State<PlansView> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.gold.withOpacity(0.15),
+                color: _PlanColors.gold.withOpacity(0.15),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.account_balance_wallet, color: AppColors.gold, size: 24),
+              child: const Icon(Icons.account_balance_wallet, color: _PlanColors.gold, size: 24),
             ),
             const SizedBox(width: 16),
             // Balance info
@@ -812,7 +866,7 @@ class _PlansViewState extends State<PlansView> {
                   Text(
                     'WALLET BALANCE',
                     style: AppTextStyles.caption.copyWith(
-                      color: AppColors.textMuted,
+                      color: _PlanColors.textMuted,
                       fontWeight: FontWeight.bold,
                       fontSize: 10,
                       letterSpacing: 1.0,
@@ -823,7 +877,7 @@ class _PlansViewState extends State<PlansView> {
                       ? const SizedBox(
                           width: 16,
                           height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gold),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: _PlanColors.gold),
                         )
                       : Text(
                           '₹${controller.walletBalance.value.toStringAsFixed(2)}',
@@ -847,7 +901,7 @@ class _PlansViewState extends State<PlansView> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: isAdding ? AppColors.gold.withOpacity(0.5) : AppColors.gold,
+                      color: isAdding ? _PlanColors.gold.withOpacity(0.5) : _PlanColors.gold,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
@@ -857,15 +911,15 @@ class _PlansViewState extends State<PlansView> {
                           const SizedBox(
                             width: 14,
                             height: 14,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onGold),
+                            child: CircularProgressIndicator(strokeWidth: 2, color: _PlanColors.onGold),
                           )
                         else
-                          const Icon(Icons.add, size: 16, color: AppColors.onGold),
+                          const Icon(Icons.add, size: 16, color: _PlanColors.onGold),
                         const SizedBox(width: 6),
                         Text(
                           isAdding ? 'ADDING...' : 'ADD MONEY',
                           style: const TextStyle(
-                            color: AppColors.onGold,
+                            color: _PlanColors.onGold,
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.5,
@@ -902,7 +956,7 @@ class _PlansViewState extends State<PlansView> {
           ),
           child: Container(
             decoration: const BoxDecoration(
-              color: Color(0xFF1A1A1C),
+              color: _PlanColors.sheetBg,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             padding: const EdgeInsets.all(24),
@@ -916,7 +970,7 @@ class _PlansViewState extends State<PlansView> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: AppColors.divider,
+                      color: _PlanColors.divider,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -934,7 +988,7 @@ class _PlansViewState extends State<PlansView> {
                 Text(
                   'Choose an amount or enter custom value',
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
+                    color: _PlanColors.textMuted,
                     fontSize: 13,
                   ),
                 ),
@@ -952,14 +1006,14 @@ class _PlansViewState extends State<PlansView> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF2A2520),
+                          color: _PlanColors.sheetOptionBg,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.gold.withOpacity(0.4)),
+                          border: Border.all(color: _PlanColors.gold.withOpacity(0.4)),
                         ),
                         child: Text(
                           '₹$amt',
                           style: const TextStyle(
-                            color: AppColors.gold,
+                            color: _PlanColors.gold,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
@@ -977,22 +1031,22 @@ class _PlansViewState extends State<PlansView> {
                   style: const TextStyle(color: Colors.white, fontSize: 18),
                   decoration: InputDecoration(
                     prefixText: '₹ ',
-                    prefixStyle: const TextStyle(color: AppColors.gold, fontSize: 18, fontWeight: FontWeight.bold),
+                    prefixStyle: const TextStyle(color: _PlanColors.gold, fontSize: 18, fontWeight: FontWeight.bold),
                     hintText: 'Enter amount',
-                    hintStyle: TextStyle(color: AppColors.textMuted.withOpacity(0.5)),
+                    hintStyle: TextStyle(color: _PlanColors.textMuted.withOpacity(0.5)),
                     filled: true,
-                    fillColor: const Color(0xFF141416),
+                    fillColor: _PlanColors.toggleBg,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppColors.divider),
+                      borderSide: const BorderSide(color: _PlanColors.divider),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppColors.divider),
+                      borderSide: const BorderSide(color: _PlanColors.divider),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.gold),
+                      borderSide: const BorderSide(color: _PlanColors.gold),
                     ),
                   ),
                 ),
@@ -1016,8 +1070,8 @@ class _PlansViewState extends State<PlansView> {
                     controller.addMoneyToWallet(amount);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.gold,
-                    foregroundColor: AppColors.onGold,
+                    backgroundColor: _PlanColors.gold,
+                    foregroundColor: _PlanColors.onGold,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     minimumSize: const Size.fromHeight(50),
                   ),
@@ -1056,7 +1110,7 @@ class _PlansViewState extends State<PlansView> {
       builder: (ctx) {
         return Container(
           decoration: const BoxDecoration(
-            color: Color(0xFF1A1A1C),
+            color: _PlanColors.sheetBg,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           padding: const EdgeInsets.all(24),
@@ -1070,7 +1124,7 @@ class _PlansViewState extends State<PlansView> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.divider,
+                    color: _PlanColors.divider,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -1088,7 +1142,7 @@ class _PlansViewState extends State<PlansView> {
               Text(
                 'Amount: \$${price.toStringAsFixed(2)}',
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
+                  color: _PlanColors.textMuted,
                   fontSize: 14,
                 ),
               ),
@@ -1149,9 +1203,9 @@ class _PlansViewState extends State<PlansView> {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF141416),
+            color: _PlanColors.sheetOptionBg,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: enabled ? AppColors.gold.withOpacity(0.4) : AppColors.divider),
+            border: Border.all(color: enabled ? _PlanColors.gold.withOpacity(0.4) : _PlanColors.divider),
           ),
           child: Row(
             children: [
@@ -1159,10 +1213,10 @@ class _PlansViewState extends State<PlansView> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: AppColors.gold.withOpacity(0.12),
+                  color: _PlanColors.gold.withOpacity(0.12),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: AppColors.gold, size: 22),
+                child: Icon(icon, color: _PlanColors.gold, size: 22),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -1181,7 +1235,7 @@ class _PlansViewState extends State<PlansView> {
                     Text(
                       subtitle,
                       style: const TextStyle(
-                        color: AppColors.textMuted,
+                        color: _PlanColors.textMuted,
                         fontSize: 12,
                       ),
                     ),
@@ -1190,7 +1244,7 @@ class _PlansViewState extends State<PlansView> {
               ),
               Icon(
                 Icons.chevron_right,
-                color: enabled ? AppColors.gold : AppColors.divider,
+                color: enabled ? _PlanColors.gold : _PlanColors.divider,
                 size: 22,
               ),
             ],
@@ -1201,7 +1255,7 @@ class _PlansViewState extends State<PlansView> {
   }
 
   // ---------------------------------------------------------------------------
-  // Existing Helper Widgets
+  // Advantage Cards
   // ---------------------------------------------------------------------------
 
   Widget _buildAdvantageCard({
@@ -1213,9 +1267,9 @@ class _PlansViewState extends State<PlansView> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: _PlanColors.cardBg,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: _PlanColors.cardBorder),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1224,12 +1278,12 @@ class _PlansViewState extends State<PlansView> {
             width: 44,
             height: 44,
             decoration: const BoxDecoration(
-              color: Color(0xFF1E1C18),
+              color: Color(0xFF1E1A14),
               shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
-              color: AppColors.gold,
+              color: _PlanColors.gold,
               size: 20,
             ),
           ),
@@ -1250,7 +1304,7 @@ class _PlansViewState extends State<PlansView> {
                 Text(
                   description,
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
+                    color: _PlanColors.textMuted,
                     fontSize: 12,
                     height: 1.4,
                   ),
@@ -1269,7 +1323,7 @@ class _PlansViewState extends State<PlansView> {
       child: Text(
         text,
         style: const TextStyle(
-          color: AppColors.textSecondary,
+          color: _PlanColors.textMuted,
           fontSize: 9,
           fontWeight: FontWeight.bold,
           letterSpacing: 0.5,
@@ -1283,7 +1337,7 @@ class _PlansViewState extends State<PlansView> {
       padding: EdgeInsets.symmetric(horizontal: 10),
       child: Text(
         '|',
-        style: TextStyle(color: AppColors.divider, fontSize: 9),
+        style: TextStyle(color: _PlanColors.divider, fontSize: 9),
       ),
     );
   }
@@ -1296,14 +1350,14 @@ class _PlansViewState extends State<PlansView> {
 class _CrownPainter extends CustomPainter {
   final Color color;
 
-  _CrownPainter({this.color = AppColors.gold});
+  _CrownPainter({this.color = _PlanColors.gold});
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.2
+      ..strokeWidth = 2.4
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
@@ -1312,19 +1366,19 @@ class _CrownPainter extends CustomPainter {
 
     // Bottom horizontal bar
     canvas.drawLine(
-      Offset(w * 0.12, h * 0.90),
-      Offset(w * 0.88, h * 0.90),
+      Offset(w * 0.12, h * 0.88),
+      Offset(w * 0.88, h * 0.88),
       paint,
     );
 
     // Crown peaks contour
     final path = Path();
     path.moveTo(w * 0.14, h * 0.74);
-    path.lineTo(w * 0.08, h * 0.26); // Left wing peak
-    path.lineTo(w * 0.32, h * 0.48); // Left dip
+    path.lineTo(w * 0.08, h * 0.28); // Left wing peak
+    path.lineTo(w * 0.30, h * 0.50); // Left inner dip
     path.lineTo(w * 0.50, h * 0.10); // Center tall peak
-    path.lineTo(w * 0.68, h * 0.48); // Right dip
-    path.lineTo(w * 0.92, h * 0.26); // Right wing peak
+    path.lineTo(w * 0.70, h * 0.50); // Right inner dip
+    path.lineTo(w * 0.92, h * 0.28); // Right wing peak
     path.lineTo(w * 0.86, h * 0.74); // Right bottom corner
     path.close();
 
