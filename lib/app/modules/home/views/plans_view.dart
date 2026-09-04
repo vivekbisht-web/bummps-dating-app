@@ -533,7 +533,7 @@ class _PlansViewState extends State<PlansView> {
                           Text(
                             '\$${price.toStringAsFixed(2)}',
                             style: const TextStyle(
-                              color: AppColors.gold,
+                              color: AppColors.textPrimary,
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                             ),
