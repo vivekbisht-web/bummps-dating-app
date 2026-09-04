@@ -666,8 +666,6 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
             PlanFeature(id: '2', text: 'Passport mode — match anywhere', included: true),
             PlanFeature(id: '3', text: '5 Super Bummps included every month', included: true),
             PlanFeature(id: '4', text: 'Maximum visibility', included: true),
-            PlanFeature(id: '5', text: 'Basic matching & chat', included: true),
-            PlanFeature(id: '6', text: 'Verified profiles only', included: true),
           ],
         ),
       ]);

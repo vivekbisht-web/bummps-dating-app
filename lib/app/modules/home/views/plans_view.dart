@@ -18,6 +18,7 @@ class PlansView extends StatefulWidget {
 class _PlansViewState extends State<PlansView> {
   bool isMonthly = true;
   String? selectedPlanId;
+  String? hoveredPlanId;
 
   @override
   void initState() {
@@ -73,8 +74,8 @@ class _PlansViewState extends State<PlansView> {
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        const Color(0xFFD4AF37).withOpacity(0.18),
-                        const Color(0xFF9E7830).withOpacity(0.07),
+                        AppColors.gold.withOpacity(0.18),
+                        AppColors.goldDark.withOpacity(0.07),
                         Colors.transparent,
                       ],
                       stops: const [0.0, 0.45, 1.0],
@@ -408,8 +409,34 @@ class _PlansViewState extends State<PlansView> {
   }
 
   // ---------------------------------------------------------------------------
-  // Plan Card Widget (With Luminous Golden Glow from Reference)
+  // Plan Card Widget (Golden on Hover / Selection, Otherwise Clean Dark)
   // ---------------------------------------------------------------------------
+
+  String _formatPlanName(String rawName) {
+    final lower = rawName.toLowerCase().trim();
+    if (lower == 'bummps.' || lower == 'bummps' || lower.contains('basic') || lower.contains('silver') || lower.contains('starter')) {
+      return 'bummps.';
+    } else if (lower == 'bummps+' || lower == 'bummps plus' || lower.contains('plus') || lower.contains('gold')) {
+      return 'bummps+';
+    } else if (lower == 'bummps pro' || lower.contains('pro') || lower.contains('platinum') || lower.contains('premium')) {
+      return 'bummps Pro';
+    }
+    return rawName;
+  }
+
+  String _formatPlanSubtitle(String rawName, String rawSubtitle) {
+    final clean = rawSubtitle.trim();
+    if (clean.isNotEmpty && !clean.toUpperCase().contains('POPULAR')) {
+      return clean;
+    }
+    final lower = rawName.toLowerCase().trim();
+    if (lower.contains('bummps.') || lower == 'bummps' || lower.contains('basic') || lower.contains('silver') || lower.contains('starter')) {
+      return 'Get started';
+    } else if (lower.contains('pro') || lower.contains('platinum') || lower.contains('premium')) {
+      return 'Go all in';
+    }
+    return '';
+  }
 
   Widget _buildPlanCard({
     required BuildContext context,
@@ -419,94 +446,113 @@ class _PlansViewState extends State<PlansView> {
     required bool isCurrentPlan,
     required bool isSelected,
   }) {
-    final bool isPopular = plan.isPopular == true;
-    final bool isGlowing = isSelected || isCurrentPlan;
+    final bool isPopular = plan.isPopular == true ||
+        plan.name.toLowerCase().contains('+') ||
+        plan.name.toLowerCase().contains('plus');
 
-    return GestureDetector(
-      onTap: () {
+    final bool isHovered = hoveredPlanId == plan.id;
+    final bool isHighlighted = hoveredPlanId != null ? isHovered : (isSelected || isCurrentPlan);
+
+    final String displayName = _formatPlanName(plan.name);
+    final String displaySubtitle = _formatPlanSubtitle(plan.name, plan.subtitle);
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) {
         setState(() {
-          selectedPlanId = plan.id;
+          hoveredPlanId = plan.id;
         });
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeInOut,
-        margin: const EdgeInsets.only(bottom: 22),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // Main Card Body with Glowing Golden Shadow
-            Container(
-              padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF131315),
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(
-                  color: isGlowing
-                      ? const Color(0xFFE8B84B)
-                      : (isPopular
-                          ? const Color(0xFFE8B84B).withOpacity(0.45)
-                          : const Color(0xFF262420)),
-                  width: isGlowing ? 1.8 : 1.2,
+      onExit: (_) {
+        setState(() {
+          if (hoveredPlanId == plan.id) {
+            hoveredPlanId = null;
+          }
+        });
+      },
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            selectedPlanId = plan.id;
+          });
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeInOut,
+          margin: const EdgeInsets.only(bottom: 22),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // Main Card Body with Intense Dynamic Golden Glow when Highlighted / Hovered
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeInOut,
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF131315),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: isHighlighted
+                        ? AppColors.gold
+                        : const Color(0xFF262420),
+                    width: isHighlighted ? 1.8 : 1.0,
+                  ),
+                  boxShadow: isHighlighted
+                      ? [
+                          // Outer wide gold aura / neon diffusion
+                          BoxShadow(
+                            color: AppColors.gold.withOpacity(0.42),
+                            blurRadius: 36,
+                            spreadRadius: 3.0,
+                            offset: Offset.zero,
+                          ),
+                          // Medium intense luminous gold ring
+                          BoxShadow(
+                            color: AppColors.gold.withOpacity(0.60),
+                            blurRadius: 18,
+                            spreadRadius: 1.5,
+                            offset: Offset.zero,
+                          ),
+                          // Tight crisp gold edge halo
+                          BoxShadow(
+                            color: AppColors.goldLight.withOpacity(0.50),
+                            blurRadius: 6,
+                            spreadRadius: 0.5,
+                            offset: Offset.zero,
+                          ),
+                          // Deep drop shadow for elevation
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.6),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ]
+                      : null,
                 ),
-                boxShadow: isGlowing
-                    ? [
-                        // Soft outer gold bloom
-                        BoxShadow(
-                          color: const Color(0xFFE8B84B).withOpacity(0.32),
-                          blurRadius: 28,
-                          spreadRadius: 1.5,
-                          offset: const Offset(0, 3),
-                        ),
-                        // Inner tight gold halo
-                        BoxShadow(
-                          color: const Color(0xFFD4AF37).withOpacity(0.18),
-                          blurRadius: 10,
-                          spreadRadius: 0,
-                          offset: const Offset(0, 1),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Plan Name, Tagline & Price Row
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Left: Title & Tagline (from API)
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              plan.name,
-                              style: const TextStyle(
-                                color: AppColors.gold,
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Plan Name, Tagline & Price Row
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Left: Title & Tagline
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                displayName,
+                                style: TextStyle(
+                                  color: isHighlighted ? AppColors.gold : Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.2,
+                                ),
                               ),
-                            ),
-                            Builder(
-                              builder: (context) {
-                                String displaySubtitle = plan.subtitle.trim();
-                                if (displaySubtitle.isEmpty) {
-                                  final nameLower = plan.name.toLowerCase();
-                                  if (nameLower.contains('bummps.') || nameLower.contains('basic') || nameLower.contains('silver')) {
-                                    displaySubtitle = 'Get started';
-                                  } else if (nameLower.contains('pro') || nameLower.contains('platinum')) {
-                                    displaySubtitle = 'Go all in';
-                                  }
-                                }
-
-                                if (displaySubtitle.isEmpty || displaySubtitle.toUpperCase().contains('POPULAR')) {
-                                  return const SizedBox.shrink();
-                                }
-
-                                return Padding(
+                              if (displaySubtitle.isNotEmpty)
+                                Padding(
                                   padding: const EdgeInsets.only(top: 3.0, right: 8.0),
                                   child: Text(
                                     displaySubtitle,
@@ -518,157 +564,161 @@ class _PlansViewState extends State<PlansView> {
                                       fontWeight: FontWeight.w400,
                                     ),
                                   ),
-                                );
-                              },
+                                ),
+                            ],
+                          ),
+                        ),
+
+                        // Right: Price & /month
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              '\$${price.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                color: isHighlighted ? AppColors.gold : Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              isMonthly ? '/month' : '/mo',
+                              style: const TextStyle(
+                                color: Color(0xFF8E8A82),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w400,
+                              ),
                             ),
                           ],
                         ),
-                      ),
-
-                      // Right: Price & /month (from API)
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Text(
-                            '\$${price.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
+                      ],
+                    ),
+                    if (!isMonthly && plan.annualPrice > 0) ...[
+                      const SizedBox(height: 4),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          '\$${(price * 12).toStringAsFixed(2)} billed annually',
+                          style: const TextStyle(
+                            color: Color(0xFF8E8A82),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w400,
                           ),
-                          const SizedBox(width: 3),
-                          Text(
-                            isMonthly ? '/month' : '/mo',
-                            style: const TextStyle(
-                              color: Color(0xFF8E8A82),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  if (!isMonthly && plan.annualPrice > 0) ...[
-                    const SizedBox(height: 4),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        '\$${(price * 12).toStringAsFixed(2)} billed annually',
-                        style: const TextStyle(
-                          color: Color(0xFF8E8A82),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w400,
                         ),
                       ),
-                    ),
+                    ],
+                    const SizedBox(height: 18),
+
+                    // Features List
+                    if (plan.features.isNotEmpty)
+                      ...plan.features.map<Widget>((feature) => _buildFeatureItem(
+                            feature.text,
+                            isIncluded: feature.included,
+                            isHighlighted: isHighlighted,
+                          ))
+                    else
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8.0),
+                        child: Text(
+                          'All standard membership benefits',
+                          style: TextStyle(color: Color(0xFFDDD8D0), fontSize: 14),
+                        ),
+                      ),
+
+                    const SizedBox(height: 18),
+
+                    // Subscribe CTA Button
+                    Obx(() {
+                      final isSubmitting = controller.isSubmittingSubscription.value;
+                      return ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isCurrentPlan
+                              ? const Color(0xFF1E1E22)
+                              : (isHighlighted ? AppColors.gold : const Color(0xFF221F1A)),
+                          foregroundColor: isCurrentPlan
+                              ? AppColors.gold
+                              : (isHighlighted ? const Color(0xFF141416) : AppColors.gold),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: isCurrentPlan
+                                ? BorderSide(color: AppColors.gold.withOpacity(0.4), width: 1)
+                                : (isHighlighted
+                                    ? BorderSide.none
+                                    : BorderSide(color: AppColors.gold.withOpacity(0.35), width: 1)),
+                          ),
+                          minimumSize: const Size.fromHeight(48),
+                          elevation: isHighlighted ? 2 : 0,
+                        ),
+                        onPressed: (isCurrentPlan || isSubmitting)
+                            ? null
+                            : () {
+                                _showPaymentMethodSheet(
+                                  context,
+                                  controller,
+                                  plan.id,
+                                  isMonthly ? 'monthly' : 'annual',
+                                  price,
+                                );
+                              },
+                        child: isSubmitting
+                            ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: isHighlighted ? const Color(0xFF141416) : AppColors.gold,
+                                ),
+                              )
+                            : Text(
+                                isCurrentPlan ? 'YOUR CURRENT PLAN' : 'SUBSCRIBE NOW',
+                                style: TextStyle(
+                                  color: isCurrentPlan
+                                      ? AppColors.gold
+                                      : (isHighlighted ? const Color(0xFF141416) : AppColors.gold),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                      );
+                    }),
                   ],
-                  const SizedBox(height: 18),
-
-                  // Features List (from API)
-                  if (plan.features.isNotEmpty)
-                    ...plan.features.map<Widget>((feature) => _buildFeatureItem(
-                          feature.text,
-                          isIncluded: feature.included,
-                        ))
-                  else
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8.0),
-                      child: Text(
-                        'All standard membership benefits',
-                        style: TextStyle(color: Color(0xFFDDD8D0), fontSize: 14),
-                      ),
-                    ),
-
-                  const SizedBox(height: 18),
-
-                  // Subscribe CTA Button
-                  Obx(() {
-                    final isSubmitting = controller.isSubmittingSubscription.value;
-                    return ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isCurrentPlan
-                            ? const Color(0xFF1E1E22)
-                            : AppColors.gold,
-                        foregroundColor: isCurrentPlan
-                            ? AppColors.gold
-                            : AppColors.onGold,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          side: isCurrentPlan
-                              ? BorderSide(color: AppColors.gold.withOpacity(0.4), width: 1)
-                              : BorderSide.none,
-                        ),
-                        minimumSize: const Size.fromHeight(46),
-                        elevation: 0,
-                      ),
-                      onPressed: (isCurrentPlan || isSubmitting)
-                          ? null
-                          : () {
-                              _showPaymentMethodSheet(
-                                context,
-                                controller,
-                                plan.id,
-                                isMonthly ? 'monthly' : 'annual',
-                                price,
-                              );
-                            },
-                      child: isSubmitting
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.onGold,
-                              ),
-                            )
-                          : Text(
-                              isCurrentPlan ? 'YOUR CURRENT PLAN' : 'SUBSCRIBE NOW',
-                              style: TextStyle(
-                                color: isCurrentPlan ? AppColors.gold : AppColors.onGold,
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                    );
-                  }),
-                ],
+                ),
               ),
-            ),
 
-            // "MOST POPULAR" Pill Badge on Top Right
-            if (isPopular)
-              Positioned(
-                top: -12,
-                right: 18,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4.5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8B84B),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
+              // "MOST POPULAR" Pill Badge on Top Right
+              if (isPopular)
+                Positioned(
+                  top: -12,
+                  right: 18,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4.5),
+                    decoration: BoxDecoration(
+                      color: AppColors.gold,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Text(
+                      'MOST POPULAR',
+                      style: TextStyle(
+                        color: Color(0xFF141416),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.8,
                       ),
-                    ],
-                  ),
-                  child: const Text(
-                    'MOST POPULAR',
-                    style: TextStyle(
-                      color: Color(0xFF141416),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.8,
                     ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -678,7 +728,7 @@ class _PlansViewState extends State<PlansView> {
   // Feature Checkmark Item
   // ---------------------------------------------------------------------------
 
-  Widget _buildFeatureItem(String text, {bool isIncluded = true}) {
+  Widget _buildFeatureItem(String text, {bool isIncluded = true, bool isHighlighted = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10.0),
       child: Row(
@@ -689,11 +739,18 @@ class _PlansViewState extends State<PlansView> {
             height: 20,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isIncluded ? const Color(0xFF282216) : const Color(0xFF1E1E22),
+              color: isHighlighted
+                  ? (isIncluded ? const Color(0xFF282216) : const Color(0xFF1E1E22))
+                  : const Color(0xFF19191C),
+              border: isHighlighted && isIncluded
+                  ? Border.all(color: AppColors.gold.withOpacity(0.35), width: 0.8)
+                  : null,
             ),
             child: Icon(
               isIncluded ? Icons.check : Icons.close,
-              color: isIncluded ? const Color(0xFFD4AF37) : Colors.white24,
+              color: isHighlighted
+                  ? (isIncluded ? AppColors.gold : Colors.white24)
+                  : (isIncluded ? const Color(0xFF6E6A60) : Colors.white24),
               size: 13,
             ),
           ),
@@ -702,7 +759,9 @@ class _PlansViewState extends State<PlansView> {
             child: Text(
               text,
               style: TextStyle(
-                color: isIncluded ? const Color(0xFFDDD8D0) : Colors.white38,
+                color: isIncluded
+                    ? (isHighlighted ? const Color(0xFFDDD8D0) : const Color(0xFF9E9A90))
+                    : Colors.white38,
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
                 decoration: isIncluded ? null : TextDecoration.lineThrough,
