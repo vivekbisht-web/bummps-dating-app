@@ -144,8 +144,18 @@ class AuthProvider {
         List<dynamic>? list;
         if (json is List) {
           list = json;
-        } else if (json is Map && json.containsKey('plans') && json['plans'] is List) {
-          list = json['plans'] as List<dynamic>;
+        } else if (json is Map) {
+          if (json.containsKey('plans') && json['plans'] is List) {
+            list = json['plans'] as List<dynamic>;
+          } else if (json.containsKey('data')) {
+            if (json['data'] is List) {
+              list = json['data'] as List<dynamic>;
+            } else if (json['data'] is Map && (json['data'] as Map).containsKey('plans') && json['data']['plans'] is List) {
+              list = json['data']['plans'] as List<dynamic>;
+            }
+          } else if (json.containsKey('result') && json['result'] is List) {
+            list = json['result'] as List<dynamic>;
+          }
         }
         if (list == null || list.isEmpty) return [];
         return list

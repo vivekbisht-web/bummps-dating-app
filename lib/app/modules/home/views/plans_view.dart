@@ -1,11 +1,12 @@
-  import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/bummps_logo.dart';
 import '../../../routes/app_pages.dart';
-import '../controllers/home_controller.dart';
+import '../../home/controllers/home_controller.dart';
+import '../../../data/models/subscription_plan.dart';
 
 class PlansView extends StatefulWidget {
   const PlansView({super.key});
@@ -16,6 +17,27 @@ class PlansView extends StatefulWidget {
 
 class _PlansViewState extends State<PlansView> {
   bool isMonthly = true;
+  String? selectedPlanId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final controller = Get.find<HomeController>();
+      controller.fetchSubscriptionPlans();
+      controller.fetchUserSubscription();
+      controller.fetchWalletBalance();
+    });
+  }
+
+  Future<void> _handleRefresh() async {
+    final controller = Get.find<HomeController>();
+    await Future.wait([
+      controller.fetchSubscriptionPlans(),
+      controller.fetchUserSubscription(),
+      controller.fetchWalletBalance(),
+    ]);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,456 +47,669 @@ class _PlansViewState extends State<PlansView> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.gold, size: 22),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.gold, size: 20),
           onPressed: () => Get.back(),
         ),
         title: const BummpsLogo(compact: true),
         centerTitle: true,
         automaticallyImplyLeading: false,
+        actions: const [
+          SizedBox(width: 48),
+        ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // --- Wallet Balance Card ---
-              _buildWalletCard(),
-              const SizedBox(height: 24),
-
-              // --- Header Section ---
-              const SizedBox(height: 8),
-              Center(
-                child: Text(
-                  'Elevate Your Journey',
-                  style: AppTextStyles.headlineMedium.copyWith(
-                    color: AppColors.gold,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Text(
-                    'Unlock the full potential of meaningful connections with our elite membership tiers.',
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                      fontSize: 13,
-                      height: 1.45,
+        child: Stack(
+          children: [
+            // --- Ambient Golden Spotlight Glow Behind Header & Top Cards ---
+            Positioned(
+              top: -40,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  width: 380,
+                  height: 380,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFFD4AF37).withOpacity(0.18),
+                        const Color(0xFF9E7830).withOpacity(0.07),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.45, 1.0],
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+            ),
 
-              // --- Custom Segmented Toggle Control ---
-              Container(
-                height: 52,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF141416),
-                  borderRadius: BorderRadius.circular(26),
-                  border: Border.all(color: AppColors.divider),
-                ),
-                padding: const EdgeInsets.all(4),
-                child: Row(
-                  children: [
-                    // Monthly option
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            isMonthly = true;
-                          });
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: isMonthly ? AppColors.gold : Colors.transparent,
-                            borderRadius: BorderRadius.circular(22),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'MONTHLY',
-                              style: TextStyle(
-                                color: isMonthly ? AppColors.onGold : AppColors.textSecondary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Annual option
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            isMonthly = false;
-                          });
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: !isMonthly ? AppColors.gold : Colors.transparent,
-                            borderRadius: BorderRadius.circular(22),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'ANNUAL',
-                                style: TextStyle(
-                                  color: !isMonthly ? AppColors.onGold : AppColors.textSecondary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: isMonthly ? const Color(0xFF2C2414) : const Color(0xFF1A1400),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: AppColors.gold, width: 0.5),
-                                ),
-                                child: Text(
-                                  'SAVE 40%',
-                                  style: TextStyle(
-                                    color: AppColors.gold,
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.bold,
-                                    height: 1.0,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // --- Subscription Tier Card ---
-              Obx(() {
-                final controller = Get.find<HomeController>();
-                if (controller.isLoadingPlans.value && controller.subscriptionPlans.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(40.0),
-                      child: CircularProgressIndicator(color: AppColors.gold),
-                    ),
-                  );
-                }
-
-                if (controller.subscriptionPlans.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(20.0),
-                      child: Text(
-                        'No plans available at the moment.',
-                        style: TextStyle(color: AppColors.textSecondary),
-                      ),
-                    ),
-                  );
-                }
-
-                return Column(
-                  children: controller.subscriptionPlans.map((plan) {
-                    final bool isCurrentPlan = controller.currentSubscription.value?.planId == plan.id &&
-                        controller.currentSubscription.value?.isActive == true;
-                    final double price = isMonthly ? plan.monthlyPrice : plan.annualPrice;
-                    
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 20),
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: isCurrentPlan 
-                              ? AppColors.gold 
-                              : (plan.isPopular ? AppColors.gold.withOpacity(0.5) : AppColors.divider), 
-                          width: isCurrentPlan ? 2.0 : 1.2
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                plan.subtitle.toUpperCase(),
-                                style: AppTextStyles.caption.copyWith(
-                                  color: AppColors.gold,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 10,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                              if (plan.isPopular)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF2C2414),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: AppColors.gold, width: 0.8),
-                                  ),
-                                  child: const Text(
-                                    'POPULAR',
-                                    style: TextStyle(
-                                      color: AppColors.gold,
-                                      fontSize: 8,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                plan.name,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              if (isCurrentPlan)
-                                const Text(
-                                  'ACTIVE',
-                                  style: TextStyle(
-                                    color: AppColors.gold,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.baseline,
-                            textBaseline: TextBaseline.alphabetic,
-                            children: [
-                              Text(
-                                '\$${price.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 34,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Text(
-                                '/mo',
-                                style: TextStyle(
-                                  color: AppColors.textMuted,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (!isMonthly) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              '\$${(price * 12).toStringAsFixed(2)} billed annually',
-                              style: const TextStyle(
-                                color: AppColors.textMuted,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: 20),
-
-                          // Dynamic Features bullet points
-                          ...plan.features.map((feature) => _buildFeaturePoint(
-                                feature.text,
-                                isIncluded: feature.included,
-                              )),
-
-                          const SizedBox(height: 24),
-
-                          // Subscribe CTA
-                          Obx(() {
-                            final isSubmitting = controller.isSubmittingSubscription.value;
-                            return ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: isCurrentPlan ? Colors.grey[900] : AppColors.gold,
-                                foregroundColor: isCurrentPlan ? Colors.white60 : AppColors.onGold,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                minimumSize: const Size.fromHeight(48),
-                              ),
-                              onPressed: (isCurrentPlan || isSubmitting) 
-                                  ? null 
-                                  : () {
-                                      _showPaymentMethodSheet(
-                                        context,
-                                        controller,
-                                        plan.id,
-                                        isMonthly ? 'monthly' : 'annual',
-                                        price,
-                                      );
-                                    },
-                              child: isSubmitting 
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: AppColors.onGold,
-                                      ),
-                                    )
-                                  : Text(
-                                      isCurrentPlan ? 'YOUR CURRENT PLAN' : 'SUBSCRIBE NOW',
-                                      style: AppTextStyles.button.copyWith(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 1.0,
-                                      ),
-                                    ),
-                            );
-                          }),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                );
-              }),
-              const SizedBox(height: 32),
-
-              // --- The Bummps Advantage Section ---
-              const Center(
-                child: Text(
-                  'The Bummps Advantage',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              _buildAdvantageCard(
-                icon: Icons.flash_on,
-                title: 'Profile Boosts',
-                description: 'Get up to 10x more visibility by jumping to the front of the queue during peak activity hours.',
-              ),
-              _buildAdvantageCard(
-                icon: Icons.favorite,
-                title: 'See Who Liked You',
-                description: 'No more guessing. View everyone who has already shown interest in your profile.',
-              ),
-              _buildAdvantageCard(
-                icon: Icons.public,
-                title: 'Travel Mode',
-                description: 'Change your location to any city globally and match before you land.',
-              ),
-
-              // Concierge Support Showcase Card
-              Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.divider),
-                ),
+            // --- Main Content ---
+            RefreshIndicator(
+              color: AppColors.gold,
+              backgroundColor: AppColors.surface,
+              onRefresh: _handleRefresh,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      'Concierge Support',
-                      style: AppTextStyles.titleMedium.copyWith(
-                        color: AppColors.gold,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                    const SizedBox(height: 8),
+
+                    // --- Crown Icon ---
+                    Center(
+                      child: CustomPaint(
+                        size: const Size(44, 32),
+                        painter: _CrownPainter(color: AppColors.gold),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // --- Header Section: "Choose Your Plan" ---
+                    Center(
+                      child: Text(
+                        'Choose Your Plan',
+                        style: AppTextStyles.headlineMedium.copyWith(
+                          color: AppColors.gold,
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.3,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      'Exclusively for Platinum members: A dedicated lifestyle assistant to help you curate your profile and prepare for the perfect first encounter.',
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                        height: 1.45,
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Text(
+                          'Pick the plan that fits how you date',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFF9E9A90),
+                            fontSize: 14,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
+
+                    // --- Custom Segmented Toggle Control ---
                     Container(
-                      width: 140,
-                      height: 140,
+                      height: 52,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.gold, width: 2.0),
+                        color: const Color(0xFF141416),
+                        borderRadius: BorderRadius.circular(26),
+                        border: Border.all(color: AppColors.divider),
                       ),
-                      padding: const EdgeInsets.all(3),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(70),
-                        child: Image.network(
-                          'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80',
-                          fit: BoxFit.cover,
+                      padding: const EdgeInsets.all(4),
+                      child: Row(
+                        children: [
+                          // Monthly option
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  isMonthly = true;
+                                });
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: isMonthly ? AppColors.gold : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(22),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'MONTHLY',
+                                    style: TextStyle(
+                                      color: isMonthly ? AppColors.onGold : AppColors.textSecondary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Annual option
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  isMonthly = false;
+                                });
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: !isMonthly ? AppColors.gold : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(22),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'ANNUAL',
+                                      style: TextStyle(
+                                        color: !isMonthly ? AppColors.onGold : AppColors.textSecondary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: isMonthly ? const Color(0xFF2C2414) : const Color(0xFF1A1400),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: AppColors.gold, width: 0.5),
+                                      ),
+                                      child: const Text(
+                                        'SAVE 40%',
+                                        style: TextStyle(
+                                          color: AppColors.gold,
+                                          fontSize: 8,
+                                          fontWeight: FontWeight.bold,
+                                          height: 1.0,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // --- Dynamic Subscription Tier Cards from API ---
+                    Obx(() {
+                      final controller = Get.find<HomeController>();
+                      if (controller.isLoadingPlans.value && controller.subscriptionPlans.isEmpty) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(40.0),
+                            child: CircularProgressIndicator(color: AppColors.gold),
+                          ),
+                        );
+                      }
+
+                      if (controller.subscriptionPlans.isEmpty) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(20.0),
+                            child: Text(
+                              'No plans available at the moment.',
+                              style: TextStyle(color: AppColors.textSecondary),
+                            ),
+                          ),
+                        );
+                      }
+
+                      // Default selection to first plan if none selected yet
+                      final currentSelectedId = selectedPlanId ??
+                          (controller.currentSubscription.value?.hasActiveSubscription == true &&
+                                  controller.currentSubscription.value?.planId != null
+                              ? controller.currentSubscription.value!.planId
+                              : (controller.subscriptionPlans.isNotEmpty
+                                  ? controller.subscriptionPlans.first.id
+                                  : null));
+
+                      return Column(
+                        children: controller.subscriptionPlans.map((plan) {
+                          final bool isCurrentPlan = controller.currentSubscription.value?.planId == plan.id &&
+                              controller.currentSubscription.value?.isActive == true;
+                          final bool isSelected = currentSelectedId == plan.id;
+                          final double price = isMonthly ? plan.monthlyPrice : plan.annualPrice;
+
+                          return _buildPlanCard(
+                            context: context,
+                            controller: controller,
+                            plan: plan,
+                            price: price,
+                            isCurrentPlan: isCurrentPlan,
+                            isSelected: isSelected,
+                          );
+                        }).toList(),
+                      );
+                    }),
+                    const SizedBox(height: 12),
+
+                    // --- Wallet Balance Card ---
+                    _buildWalletCard(),
+                    const SizedBox(height: 32),
+
+                    // --- The Bummps Advantage Section ---
+                    const Center(
+                      child: Text(
+                        'The Bummps Advantage',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    _buildAdvantageCard(
+                      icon: Icons.flash_on,
+                      title: 'Profile Boosts',
+                      description: 'Get up to 10x more visibility by jumping to the front of the queue during peak activity hours.',
+                    ),
+                    _buildAdvantageCard(
+                      icon: Icons.favorite,
+                      title: 'See Who Liked You',
+                      description: 'No more guessing. View everyone who has already shown interest in your profile.',
+                    ),
+                    _buildAdvantageCard(
+                      icon: Icons.public,
+                      title: 'Travel Mode',
+                      description: 'Change your location to any city globally and match before you land.',
+                    ),
+
+                    // Concierge Support Showcase Card
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.divider),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Concierge Support',
+                            style: AppTextStyles.titleMedium.copyWith(
+                              color: AppColors.gold,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Exclusively for Pro & Premium members: A dedicated lifestyle assistant to help you curate your profile and prepare for the perfect first encounter.',
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.textSecondary,
+                              fontSize: 13,
+                              height: 1.45,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Container(
+                            width: 140,
+                            height: 140,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: AppColors.gold, width: 2.0),
+                            ),
+                            padding: const EdgeInsets.all(3),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(70),
+                              child: Image.network(
+                                'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80',
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+
+                    // --- Footer Links ---
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildFooterLink('RESTORE PURCHASE'),
+                        _buildFooterSpacer(),
+                        _buildFooterLink(
+                          'BILLING SUPPORT',
+                          onTap: () => Get.toNamed(
+                            Routes.helpSupport,
+                            arguments: {
+                              'subject': 'Payment Issue',
+                              'category': 'Billing',
+                              'message': 'I was charged for subscription but it is not active.',
+                            },
+                          ),
+                        ),
+                        _buildFooterSpacer(),
+                        _buildFooterLink('PRIVACY POLICY'),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Text(
+                        'Subscription will automatically renew at the end of the selected period. You can cancel at any time in your account settings.\n© 2026 SoulSync International. All rights reserved.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 9,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Plan Card Widget (With Luminous Golden Glow from Reference)
+  // ---------------------------------------------------------------------------
+
+  Widget _buildPlanCard({
+    required BuildContext context,
+    required HomeController controller,
+    required SubscriptionPlan plan,
+    required double price,
+    required bool isCurrentPlan,
+    required bool isSelected,
+  }) {
+    final bool isPopular = plan.isPopular == true;
+    final bool isGlowing = isSelected || isCurrentPlan;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          selectedPlanId = plan.id;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        margin: const EdgeInsets.only(bottom: 22),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // Main Card Body with Glowing Golden Shadow
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF131315),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: isGlowing
+                      ? const Color(0xFFE8B84B)
+                      : (isPopular
+                          ? const Color(0xFFE8B84B).withOpacity(0.45)
+                          : const Color(0xFF262420)),
+                  width: isGlowing ? 1.8 : 1.2,
+                ),
+                boxShadow: isGlowing
+                    ? [
+                        // Soft outer gold bloom
+                        BoxShadow(
+                          color: const Color(0xFFE8B84B).withOpacity(0.32),
+                          blurRadius: 28,
+                          spreadRadius: 1.5,
+                          offset: const Offset(0, 3),
+                        ),
+                        // Inner tight gold halo
+                        BoxShadow(
+                          color: const Color(0xFFD4AF37).withOpacity(0.18),
+                          blurRadius: 10,
+                          spreadRadius: 0,
+                          offset: const Offset(0, 1),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Plan Name, Tagline & Price Row
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Left: Title & Tagline (from API)
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              plan.name,
+                              style: const TextStyle(
+                                color: AppColors.gold,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                            Builder(
+                              builder: (context) {
+                                String displaySubtitle = plan.subtitle.trim();
+                                if (displaySubtitle.isEmpty) {
+                                  final nameLower = plan.name.toLowerCase();
+                                  if (nameLower.contains('bummps.') || nameLower.contains('basic') || nameLower.contains('silver')) {
+                                    displaySubtitle = 'Get started';
+                                  } else if (nameLower.contains('pro') || nameLower.contains('platinum')) {
+                                    displaySubtitle = 'Go all in';
+                                  }
+                                }
+
+                                if (displaySubtitle.isEmpty || displaySubtitle.toUpperCase().contains('POPULAR')) {
+                                  return const SizedBox.shrink();
+                                }
+
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 3.0, right: 8.0),
+                                  child: Text(
+                                    displaySubtitle,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Color(0xFF8E8A82),
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Right: Price & /month (from API)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            '\$${price.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              color: AppColors.gold,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            isMonthly ? '/month' : '/mo',
+                            style: const TextStyle(
+                              color: Color(0xFF8E8A82),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  if (!isMonthly && plan.annualPrice > 0) ...[
+                    const SizedBox(height: 4),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        '\$${(price * 12).toStringAsFixed(2)} billed annually',
+                        style: const TextStyle(
+                          color: Color(0xFF8E8A82),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ),
                   ],
-                ),
-              ),
-              const SizedBox(height: 28),
+                  const SizedBox(height: 18),
 
-              // --- Footer Links ---
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildFooterLink('RESTORE PURCHASE'),
-                  _buildFooterSpacer(),
-                  _buildFooterLink(
-                    'BILLING SUPPORT',
-                    onTap: () => Get.toNamed(
-                      Routes.helpSupport,
-                      arguments: {
-                        'subject': 'Payment Issue',
-                        'category': 'Billing',
-                        'message': 'I was charged for Gold subscription but it is not active.',
-                      },
+                  // Features List (from API)
+                  if (plan.features.isNotEmpty)
+                    ...plan.features.map<Widget>((feature) => _buildFeatureItem(
+                          feature.text,
+                          isIncluded: feature.included,
+                        ))
+                  else
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text(
+                        'All standard membership benefits',
+                        style: TextStyle(color: Color(0xFFDDD8D0), fontSize: 14),
+                      ),
                     ),
-                  ),
-                  _buildFooterSpacer(),
-                  _buildFooterLink('PRIVACY POLICY'),
+
+                  const SizedBox(height: 18),
+
+                  // Subscribe CTA Button
+                  Obx(() {
+                    final isSubmitting = controller.isSubmittingSubscription.value;
+                    return ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isCurrentPlan
+                            ? const Color(0xFF1E1E22)
+                            : AppColors.gold,
+                        foregroundColor: isCurrentPlan
+                            ? AppColors.gold
+                            : AppColors.onGold,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          side: isCurrentPlan
+                              ? BorderSide(color: AppColors.gold.withOpacity(0.4), width: 1)
+                              : BorderSide.none,
+                        ),
+                        minimumSize: const Size.fromHeight(46),
+                        elevation: 0,
+                      ),
+                      onPressed: (isCurrentPlan || isSubmitting)
+                          ? null
+                          : () {
+                              _showPaymentMethodSheet(
+                                context,
+                                controller,
+                                plan.id,
+                                isMonthly ? 'monthly' : 'annual',
+                                price,
+                              );
+                            },
+                      child: isSubmitting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.onGold,
+                              ),
+                            )
+                          : Text(
+                              isCurrentPlan ? 'YOUR CURRENT PLAN' : 'SUBSCRIBE NOW',
+                              style: TextStyle(
+                                color: isCurrentPlan ? AppColors.gold : AppColors.onGold,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                    );
+                  }),
                 ],
               ),
-              const SizedBox(height: 12),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.0),
-                child: Text(
-                  'Subscription will automatically renew at the end of the selected period. You can cancel at any time in your account settings.\n© 2026 SoulSync International. All rights reserved.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 9,
-                    height: 1.4,
+            ),
+
+            // "MOST POPULAR" Pill Badge on Top Right
+            if (isPopular)
+              Positioned(
+                top: -12,
+                right: 18,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4.5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8B84B),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Text(
+                    'MOST POPULAR',
+                    style: TextStyle(
+                      color: Color(0xFF141416),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.8,
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
-            ],
-          ),
+          ],
         ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Feature Checkmark Item
+  // ---------------------------------------------------------------------------
+
+  Widget _buildFeatureItem(String text, {bool isIncluded = true}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isIncluded ? const Color(0xFF282216) : const Color(0xFF1E1E22),
+            ),
+            child: Icon(
+              isIncluded ? Icons.check : Icons.close,
+              color: isIncluded ? const Color(0xFFD4AF37) : Colors.white24,
+              size: 13,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: isIncluded ? const Color(0xFFDDD8D0) : Colors.white38,
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                decoration: isIncluded ? null : TextDecoration.lineThrough,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -818,7 +1053,7 @@ class _PlansViewState extends State<PlansView> {
 
               const SizedBox(height: 16),
 
-              // Stripe/Card Option 🆕
+              // Stripe/Card Option
               _buildPaymentOption(
                 icon: Icons.credit_card,
                 title: 'Pay with Card',
@@ -886,7 +1121,7 @@ class _PlansViewState extends State<PlansView> {
                     const SizedBox(height: 3),
                     Text(
                       subtitle,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.textMuted,
                         fontSize: 12,
                       ),
@@ -909,31 +1144,6 @@ class _PlansViewState extends State<PlansView> {
   // ---------------------------------------------------------------------------
   // Existing Helper Widgets
   // ---------------------------------------------------------------------------
-
-  Widget _buildFeaturePoint(String text, {bool isIncluded = true}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: Row(
-        children: [
-          Icon(
-            isIncluded ? Icons.check_circle : Icons.cancel,
-            color: isIncluded ? AppColors.gold : Colors.white24,
-            size: 20,
-          ),
-          const SizedBox(width: 12),
-          Text(
-            text,
-            style: TextStyle(
-              color: isIncluded ? Colors.white : Colors.white38,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              decoration: isIncluded ? null : TextDecoration.lineThrough,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildAdvantageCard({
     required IconData icon,
@@ -1018,4 +1228,50 @@ class _PlansViewState extends State<PlansView> {
       ),
     );
   }
+}
+
+// -----------------------------------------------------------------------------
+// Sleek Gold Crown Icon Painter
+// -----------------------------------------------------------------------------
+
+class _CrownPainter extends CustomPainter {
+  final Color color;
+
+  _CrownPainter({this.color = AppColors.gold});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final w = size.width;
+    final h = size.height;
+
+    // Bottom horizontal bar
+    canvas.drawLine(
+      Offset(w * 0.12, h * 0.90),
+      Offset(w * 0.88, h * 0.90),
+      paint,
+    );
+
+    // Crown peaks contour
+    final path = Path();
+    path.moveTo(w * 0.14, h * 0.74);
+    path.lineTo(w * 0.08, h * 0.26); // Left wing peak
+    path.lineTo(w * 0.32, h * 0.48); // Left dip
+    path.lineTo(w * 0.50, h * 0.10); // Center tall peak
+    path.lineTo(w * 0.68, h * 0.48); // Right dip
+    path.lineTo(w * 0.92, h * 0.26); // Right wing peak
+    path.lineTo(w * 0.86, h * 0.74); // Right bottom corner
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
