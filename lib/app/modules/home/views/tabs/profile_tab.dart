@@ -212,8 +212,8 @@ class ProfileTab extends GetView<HomeController> {
 
               // --- BUMMPS Gold Upgrade Card ---
               Obx(() {
+                final bool hasSub = controller.isSubscriptionActive;
                 final sub = controller.currentSubscription.value;
-                final bool hasSub = sub != null && sub.isActive;
                 final bool isTrial = sub != null && sub.isTrial;
                 
                 String title = 'BUMMPS Gold';
@@ -221,7 +221,7 @@ class ProfileTab extends GetView<HomeController> {
                 String actionText = 'UPGRADE';
                 IconData badgeIcon = Icons.workspace_premium;
                 
-                if (hasSub) {
+                if (hasSub && sub != null) {
                   actionText = 'MANAGE';
                   if (isTrial) {
                     title = 'Free Trial Active';
@@ -232,6 +232,11 @@ class ProfileTab extends GetView<HomeController> {
                     desc = 'Active subscription premium features';
                     badgeIcon = Icons.verified;
                   }
+                } else if (sub != null && (!sub.hasActiveSubscription || !sub.isActive || sub.requiresSubscription)) {
+                  title = 'Subscription Expired';
+                  desc = 'Renew now to unlock swiping, likes & chat';
+                  actionText = 'RENEW';
+                  badgeIcon = Icons.lock_outline_rounded;
                 }
                 
                 return GestureDetector(

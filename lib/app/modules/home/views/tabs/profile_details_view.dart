@@ -121,6 +121,9 @@ class ProfileDetailsView extends StatelessWidget {
                           // Pass button
                           GestureDetector(
                             onTap: () {
+                              if (!controller.checkSubscriptionOrShowDialog(featureName: 'Swiping')) {
+                                return;
+                              }
                               Get.back();
                               controller.forceSwipe('nope');
                             },
@@ -140,6 +143,9 @@ class ProfileDetailsView extends StatelessWidget {
                           // Like button
                           GestureDetector(
                             onTap: () {
+                              if (!controller.checkSubscriptionOrShowDialog(featureName: 'Liking profiles')) {
+                                return;
+                              }
                               Get.back();
                               controller.forceSwipe('like');
                             },
@@ -321,6 +327,9 @@ class ProfileDetailsView extends StatelessWidget {
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: () {
+                    if (!controller.checkSubscriptionOrShowDialog(featureName: 'Direct Messaging')) {
+                      return;
+                    }
                     Get.back();
                     // Open/simulate messaging with this profile
                     final chatName = '${profile.name}, ${profile.age}';
@@ -341,7 +350,7 @@ class ProfileDetailsView extends StatelessWidget {
                     }
 
                     // Open Messages tab
-                    controller.activeTab.value = 2;
+                    controller.activeTab.value = 1;
                     // Auto-open chat details
                     final chat = controller.chatThreads.firstWhere((element) => element.name == chatName);
                     controller.openChatDetail(chat);

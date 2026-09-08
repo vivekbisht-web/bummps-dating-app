@@ -15,7 +15,6 @@ import '../../../core/services/socket/socket_service.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/models/user_profile.dart';
 import '../../../data/models/subscription_plan.dart';
-import '../../../data/models/wallet.dart';
 import '../../../data/models/circle_dashboard.dart';
 
 /// Representation of a discover profile card.
@@ -138,7 +137,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   final RxBool isLoadingLikesSearch = false.obs;
 
   // Who Liked Me subscription state
-  final RxBool hasWhoLikedMeSubscription = true.obs;
+  final RxBool hasWhoLikedMeSubscription = false.obs;
   final RxString selectedLikesFilter = 'all'.obs;
   final RxString whoLikedMeErrorMessage = ''.obs;
 
@@ -148,6 +147,43 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   final RxBool isLoadingPlans = false.obs;
   final RxBool isSubmittingSubscription = false.obs;
 
+  /// Reactive getter to check if the current user has an active, valid subscription
+  bool get isSubscriptionActive {
+    final sub = currentSubscription.value;
+    if (sub == null) return false;
+    if (sub.requiresSubscription == true) return false;
+    if (!sub.hasActiveSubscription || !sub.isActive) return false;
+    if (sub.endDate != null && sub.endDate!.isBefore(DateTime.now())) return false;
+    return true;
+  }
+
+  /// Helper to guard features that require an active subscription plan.
+  /// If subscription is expired or inactive, shows the subscription dialog and returns false.
+  bool checkSubscriptionOrShowDialog({String? featureName}) {
+    if (isSubscriptionActive) {
+      return true;
+    }
+    final msg = featureName != null
+        ? 'Your subscription has expired. Please subscribe to a plan to use $featureName.'
+        : 'Your trial or subscription has expired. Please subscribe to a plan to continue.';
+    showSubscriptionRequiredDialog(msg);
+    return false;
+  }
+
+  /// Sets current subscription state to inactive
+  void setSubscriptionInactive([String? message]) {
+    final oldSub = currentSubscription.value;
+    currentSubscription.value = UserSubscription(
+      hasActiveSubscription: false,
+      isActive: false,
+      requiresSubscription: true,
+      message: message,
+      planId: oldSub?.planId,
+      planName: oldSub?.planName,
+    );
+    hasWhoLikedMeSubscription.value = false;
+  }
+
   // Wallet state
   final RxDouble walletBalance = 0.0.obs;
   final RxBool isLoadingWallet = false.obs;
@@ -155,7 +191,6 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
 
   bool _isSubscriptionDialogOpen = false;
   bool _hasShownTrialWelcome = false;
-  String? _pendingBillingCycle;
 
   // Circle Dashboard state
   final Rxn<CircleDashboard> circleDashboard = Rxn<CircleDashboard>();
@@ -269,6 +304,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     required String subtitle,
     bool isNewTag = false,
   }) async {
+    if (!checkSubscriptionOrShowDialog(featureName: 'Discussions')) {
+      return;
+    }
     try {
       isSubmittingDiscussion.value = true;
       final authRepo = Get.find<AuthRepository>();
@@ -306,6 +344,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   final RxBool isConnecting = false.obs;
 
   Future<void> connectWithMember(String userId, {MemberSpotlight? spotlight}) async {
+    if (!checkSubscriptionOrShowDialog(featureName: 'Connecting with Members')) {
+      return;
+    }
     try {
       isConnecting.value = true;
       final authRepo = Get.find<AuthRepository>();
@@ -424,6 +465,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     int? maxHeight,
     bool? isVerified,
   }) async {
+    if (!checkSubscriptionOrShowDialog(featureName: 'Advanced Filters')) {
+      return;
+    }
     try {
       isLoadingFeed.value = true;
       profiles.clear();
@@ -692,18 +736,18 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     try {
       final authRepo = Get.find<AuthRepository>();
       final sub = await authRepo.getMySubscription();
-      debugPrint('[HomeController] Loaded user subscription from API. Has Active: ${sub.hasActiveSubscription}');
+      debugPrint('[HomeController] Loaded user subscription from API. Has Active: ${sub.hasActiveSubscription}, isActive: ${sub.isActive}');
       currentSubscription.value = sub;
       
       // Mirror subscription status to whoLikedMeSubscription
-      if (sub.hasActiveSubscription && sub.isActive) {
-        hasWhoLikedMeSubscription.value = true;
-      } else {
-        hasWhoLikedMeSubscription.value = false;
-      }
+      final bool isSubActive = sub.hasActiveSubscription &&
+          sub.isActive &&
+          (sub.endDate == null || sub.endDate!.isAfter(DateTime.now())) &&
+          !sub.requiresSubscription;
+      hasWhoLikedMeSubscription.value = isSubActive;
 
       // Check if trial is active and welcome snackbar is needed
-      if (sub.isTrial && sub.isActive && !_hasShownTrialWelcome) {
+      if (sub.isTrial && isSubActive && !_hasShownTrialWelcome) {
         _hasShownTrialWelcome = true;
         Future.delayed(const Duration(seconds: 2), () {
           AppSnackbar.showSuccess(
@@ -711,82 +755,226 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
             message: 'You have 1 month of unlimited likes, superboost features, and more!',
           );
         });
+      } else if (!isSubActive) {
+        // Show subscription expired dialog with a brief delay on startup
+        final message = sub.message ?? 'Your trial or subscription has expired. Please subscribe to a plan to continue.';
+        Future.delayed(const Duration(milliseconds: 600), () {
+          showSubscriptionRequiredDialog(message);
+        });
       }
     } catch (e) {
       debugPrint('[HomeController] Error loading user subscription: $e');
     }
   }
 
-  void showSubscriptionRequiredDialog(String message) {
+  void showSubscriptionRequiredDialog([String? message]) {
     if (_isSubscriptionDialogOpen) return;
     if (Get.currentRoute == Routes.plans) return;
+
+    final displayMessage = (message != null && message.trim().isNotEmpty)
+        ? message
+        : 'Your trial or subscription has expired. Please subscribe to a plan to continue accessing premium features.';
 
     _isSubscriptionDialogOpen = true;
     Get.dialog(
       WillPopScope(
-        onWillPop: () async => true, // Allow dismissing via physical back button
-        child: AlertDialog(
-          backgroundColor: AppColors.card,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(
-            children: [
-              const Icon(Icons.warning_amber_rounded, color: AppColors.gold, size: 28),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Access Suspended',
-                  style: AppTextStyles.titleMedium.copyWith(
+        onWillPop: () async {
+          _isSubscriptionDialogOpen = false;
+          return true;
+        },
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFF141311),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: AppColors.gold.withOpacity(0.4), width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.gold.withOpacity(0.12),
+                  blurRadius: 24,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.8),
+                  blurRadius: 30,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Glowing crown icon badge
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF3D2C13),
+                        Color(0xFF1E170A),
+                      ],
+                    ),
+                    border: Border.all(color: AppColors.gold, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.gold.withOpacity(0.25),
+                        blurRadius: 16,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.workspace_premium_rounded,
                     color: AppColors.gold,
-                    fontWeight: FontWeight.bold,
+                    size: 34,
                   ),
                 ),
-              ),
-            ],
-          ),
-          content: Text(
-            message,
-            style: AppTextStyles.bodyMedium.copyWith(color: Colors.white70),
-          ),
-          actionsAlignment: MainAxisAlignment.spaceBetween,
-          actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          actions: [
-            TextButton(
-              onPressed: () {
-                _isSubscriptionDialogOpen = false;
-                Get.back(); // Dismiss dialog
-              },
-              child: Text(
-                'CLOSE',
-                style: AppTextStyles.button.copyWith(color: Colors.white54),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.gold,
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              ),
-              onPressed: () {
-                _isSubscriptionDialogOpen = false;
-                Get.back(); // Dismiss dialog
-                Get.toNamed(Routes.plans);
-              },
-              child: Text(
-                'VIEW PLANS',
-                style: AppTextStyles.button.copyWith(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
+                const SizedBox(height: 18),
+
+                // Title
+                Text(
+                  'Subscription Expired',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.headlineMedium.copyWith(
+                    color: AppColors.gold,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 10),
+
+                // Message
+                Text(
+                  displayMessage,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: Colors.white.withOpacity(0.8),
+                    height: 1.4,
+                    fontSize: 13.5,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Features list mini-card
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1C1914),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.gold.withOpacity(0.15)),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildDialogFeatureRow(Icons.favorite_rounded, 'Unlimited swiping & likes'),
+                      const SizedBox(height: 8),
+                      _buildDialogFeatureRow(Icons.chat_bubble_rounded, 'Direct messaging & instant chats'),
+                      const SizedBox(height: 8),
+                      _buildDialogFeatureRow(Icons.visibility_rounded, 'See who liked your profile'),
+                      const SizedBox(height: 8),
+                      _buildDialogFeatureRow(Icons.bolt_rounded, 'Spotlight profile boost & rewind'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Action Buttons
+                Row(
+                  children: [
+                    // Close / Later Button
+                    Expanded(
+                      flex: 2,
+                      child: TextButton(
+                        onPressed: () {
+                          _isSubscriptionDialogOpen = false;
+                          Get.back();
+                        },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            side: BorderSide(color: Colors.white.withOpacity(0.15)),
+                          ),
+                        ),
+                        child: Text(
+                          'LATER',
+                          style: AppTextStyles.button.copyWith(
+                            color: Colors.white60,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // View Plans CTA
+                    Expanded(
+                      flex: 3,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.gold,
+                          foregroundColor: Colors.black,
+                          elevation: 4,
+                          shadowColor: AppColors.gold.withOpacity(0.4),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        onPressed: () {
+                          _isSubscriptionDialogOpen = false;
+                          Get.back();
+                          Get.toNamed(Routes.plans);
+                        },
+                        child: const Text(
+                          'VIEW PLANS',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.8,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
       barrierDismissible: true,
     ).then((_) {
       _isSubscriptionDialogOpen = false;
     });
+  }
+
+  Widget _buildDialogFeatureRow(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.gold, size: 16),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -1222,18 +1410,33 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   void handlePanEnd(double velocityX, double velocityY) {
     // If dragged beyond threshold (120px) or high velocity
     if (cardX.value > 120 || velocityX > 400) {
+      if (!checkSubscriptionOrShowDialog(featureName: 'Liking profiles')) {
+        _resetCardPosition();
+        return;
+      }
       _executeSwipeAction('like');
     } else if (cardX.value < -120 || velocityX < -400) {
+      if (!checkSubscriptionOrShowDialog(featureName: 'Swiping profiles')) {
+        _resetCardPosition();
+        return;
+      }
       _executeSwipeAction('nope');
     } else if (cardY.value < -100 || velocityY < -400) {
+      if (!checkSubscriptionOrShowDialog(featureName: 'Super Likes')) {
+        _resetCardPosition();
+        return;
+      }
       _executeSwipeAction('super');
     } else {
-      // Snap back to center
-      cardX.value = 0;
-      cardY.value = 0;
-      swipeOverlayOpacity.value = 0;
-      swipeDirection.value = '';
+      _resetCardPosition();
     }
+  }
+
+  void _resetCardPosition() {
+    cardX.value = 0;
+    cardY.value = 0;
+    swipeOverlayOpacity.value = 0;
+    swipeDirection.value = '';
   }
 
   void _executeSwipeAction(String action) async {
@@ -1328,10 +1531,19 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   }
 
   void forceSwipe(String direction) {
+    String feature = 'Swiping';
+    if (direction == 'like') feature = 'Liking profiles';
+    if (direction == 'super') feature = 'Super Likes';
+    if (!checkSubscriptionOrShowDialog(featureName: feature)) {
+      return;
+    }
     _executeSwipeAction(direction);
   }
 
   void undoSwipe() {
+    if (!checkSubscriptionOrShowDialog(featureName: 'Rewind')) {
+      return;
+    }
     if (swipeHistory.isEmpty) {
       // History is empty — ignore quietly to prevent continuous snackbars
       return;
@@ -1356,6 +1568,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   }
 
   void triggerBoost() async {
+    if (!checkSubscriptionOrShowDialog(featureName: 'Spotlight Boost')) {
+      return;
+    }
     if (isBoostActive.value) return;
 
     try {
@@ -1536,7 +1751,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
                   child: InkWell(
                     onTap: () {
                       Get.back();
-                      activeTab.value = 2; // Jump to Messages
+                      final chat = getOrCreateChatThread(profile);
+                      activeTab.value = 1; // Jump to Matches & Messages tab
+                      openChatDetail(chat);
                     },
                     borderRadius: BorderRadius.circular(16),
                     child: Container(
@@ -1574,6 +1791,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   // --- Messaging Chat Detail View & Socket Handling ---
 
   void openChatDetail(ChatThread chat) {
+    if (!checkSubscriptionOrShowDialog(featureName: 'Direct Messaging')) {
+      return;
+    }
     debugPrint('[HomeController] openChatDetail() called - chatId: "${chat.id}", name: "${chat.name}"');
     
     // Fetch latest messages via Socket
@@ -1647,6 +1867,9 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   }
 
   void sendMessage(ChatThread chat) async {
+    if (!checkSubscriptionOrShowDialog(featureName: 'Sending Messages')) {
+      return;
+    }
     final text = chatInputController.text.trim();
     if (text.isEmpty) return;
 

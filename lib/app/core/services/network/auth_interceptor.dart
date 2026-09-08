@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart' as get_x;
 import '../../../routes/app_pages.dart';
@@ -111,6 +110,7 @@ class AuthInterceptor extends QueuedInterceptor {
             final message = data['message']?.toString() ?? 'Your trial or subscription has expired. Please subscribe to a plan to continue.';
             if (get_x.Get.isRegistered<HomeController>()) {
               final homeController = get_x.Get.find<HomeController>();
+              homeController.setSubscriptionInactive(message);
               homeController.showSubscriptionRequiredDialog(message);
             } else {
               _showSubscriptionRequiredDialogDirectly(message);
@@ -143,63 +143,156 @@ class AuthInterceptor extends QueuedInterceptor {
     _isSubscriptionDialogOpen = true;
     get_x.Get.dialog(
       WillPopScope(
-        onWillPop: () async => true, // Allow dismissing via physical back button
-        child: AlertDialog(
-          backgroundColor: AppColors.card,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(
-            children: [
-              const Icon(Icons.warning_amber_rounded, color: AppColors.gold, size: 28),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Access Suspended',
-                  style: AppTextStyles.titleMedium.copyWith(
+        onWillPop: () async {
+          _isSubscriptionDialogOpen = false;
+          return true;
+        },
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFF141311),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: AppColors.gold.withOpacity(0.4), width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.gold.withOpacity(0.12),
+                  blurRadius: 24,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.8),
+                  blurRadius: 30,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Glowing crown icon badge
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF3D2C13),
+                        Color(0xFF1E170A),
+                      ],
+                    ),
+                    border: Border.all(color: AppColors.gold, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.gold.withOpacity(0.25),
+                        blurRadius: 16,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.workspace_premium_rounded,
                     color: AppColors.gold,
-                    fontWeight: FontWeight.bold,
+                    size: 34,
                   ),
                 ),
-              ),
-            ],
-          ),
-          content: Text(
-            message,
-            style: AppTextStyles.bodyMedium.copyWith(color: Colors.white70),
-          ),
-          actionsAlignment: MainAxisAlignment.spaceBetween,
-          actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          actions: [
-            TextButton(
-              onPressed: () {
-                _isSubscriptionDialogOpen = false;
-                get_x.Get.back(); // Dismiss dialog
-              },
-              child: Text(
-                'CLOSE',
-                style: AppTextStyles.button.copyWith(color: Colors.white54),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.gold,
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              ),
-              onPressed: () {
-                _isSubscriptionDialogOpen = false;
-                get_x.Get.back(); // Dismiss dialog
-                get_x.Get.toNamed(Routes.plans);
-              },
-              child: Text(
-                'VIEW PLANS',
-                style: AppTextStyles.button.copyWith(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
+                const SizedBox(height: 18),
+
+                // Title
+                Text(
+                  'Subscription Expired',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.headlineMedium.copyWith(
+                    color: AppColors.gold,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 10),
+
+                // Message
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: Colors.white.withOpacity(0.8),
+                    height: 1.4,
+                    fontSize: 13.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Action Buttons
+                Row(
+                  children: [
+                    // Close Button
+                    Expanded(
+                      flex: 2,
+                      child: TextButton(
+                        onPressed: () {
+                          _isSubscriptionDialogOpen = false;
+                          get_x.Get.back();
+                        },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            side: BorderSide(color: Colors.white.withOpacity(0.15)),
+                          ),
+                        ),
+                        child: Text(
+                          'LATER',
+                          style: AppTextStyles.button.copyWith(
+                            color: Colors.white60,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // View Plans CTA
+                    Expanded(
+                      flex: 3,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.gold,
+                          foregroundColor: Colors.black,
+                          elevation: 4,
+                          shadowColor: AppColors.gold.withOpacity(0.4),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        onPressed: () {
+                          _isSubscriptionDialogOpen = false;
+                          get_x.Get.back();
+                          get_x.Get.toNamed(Routes.plans);
+                        },
+                        child: const Text(
+                          'VIEW PLANS',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.8,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
       barrierDismissible: true,

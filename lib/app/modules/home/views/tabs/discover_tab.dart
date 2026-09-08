@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/bummps_logo.dart';
+import '../../../../routes/app_pages.dart';
 import '../../controllers/home_controller.dart';
 import 'profile_details_view.dart';
 
@@ -12,6 +13,9 @@ class DiscoverTab extends GetView<HomeController> {
   const DiscoverTab({super.key});
 
   void _showFilterSheet(BuildContext context) {
+    if (!controller.checkSubscriptionOrShowDialog(featureName: 'Advanced Filters')) {
+      return;
+    }
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -45,6 +49,83 @@ class DiscoverTab extends GetView<HomeController> {
               ],
             ),
           ),
+
+          // Expired Subscription Warning Banner
+          Obx(() {
+            if (!controller.isSubscriptionActive && !controller.isLoadingFeed.value) {
+              return GestureDetector(
+                onTap: () => Get.toNamed(Routes.plans),
+                child: Container(
+                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF241A08),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.gold.withOpacity(0.5), width: 1.2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.gold.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: AppColors.gold.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.workspace_premium_rounded, color: AppColors.gold, size: 18),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Subscription Expired',
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.gold,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Subscribe to unlock unlimited likes & chats',
+                              style: AppTextStyles.caption.copyWith(
+                                color: Colors.white70,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          gradient: AppColors.goldGradient,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          'RENEW',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          }),
 
           // Main Card Area
           Expanded(

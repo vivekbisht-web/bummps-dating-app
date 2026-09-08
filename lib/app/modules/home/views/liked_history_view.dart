@@ -116,7 +116,7 @@ class LikedHistoryView extends GetView<HomeController> {
                 },
               );
 
-              if (controller.hasWhoLikedMeSubscription.value == false) {
+              if (controller.hasWhoLikedMeSubscription.value == false || !controller.isSubscriptionActive) {
                 return Expanded(
                   child: Stack(
                     children: [
