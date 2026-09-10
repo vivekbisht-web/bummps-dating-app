@@ -101,19 +101,25 @@ class LikedHistoryView extends GetView<HomeController> {
                 );
               }
 
-              final Widget grid = GridView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: controller.likedProfilesList.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.74,
-                  crossAxisSpacing: 14,
-                  mainAxisSpacing: 14,
+              final Widget grid = RefreshIndicator(
+                onRefresh: controller.loadWhoLikedMeProfiles,
+                color: AppColors.gold,
+                backgroundColor: AppColors.card,
+                child: GridView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  itemCount: controller.likedProfilesList.length,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.74,
+                    crossAxisSpacing: 14,
+                    mainAxisSpacing: 14,
+                  ),
+                  itemBuilder: (context, index) {
+                    final profile = controller.likedProfilesList[index];
+                    return _buildProfileCard(profile);
+                  },
                 ),
-                itemBuilder: (context, index) {
-                  final profile = controller.likedProfilesList[index];
-                  return _buildProfileCard(profile);
-                },
               );
 
               if (controller.hasWhoLikedMeSubscription.value == false || !controller.isSubscriptionActive) {

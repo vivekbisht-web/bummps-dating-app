@@ -89,6 +89,8 @@ class ProfileDetailsView extends StatelessWidget {
                         children: [
                           Text(
                             '${profile.name}, ${profile.age}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: AppTextStyles.displayLarge.copyWith(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,

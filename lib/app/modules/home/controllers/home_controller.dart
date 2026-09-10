@@ -1307,11 +1307,32 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     }
   }
 
+  /// Public refresh method for Matches & Messages tab pull-to-refresh
+  Future<void> refreshMatchesAndChats() async {
+    try {
+      await Future.wait([
+        _loadMatchesFromApi(),
+        loadWhoLikedMeProfiles(),
+      ]);
+      try {
+        final socketService = Get.find<SocketService>();
+        if (socketService.isConnected.value) {
+          socketService.getChats((chatsList) {
+            _populateChatsFromSocket(chatsList);
+          });
+        }
+      } catch (e) {
+        debugPrint('[HomeController] Socket refresh getChats: $e');
+      }
+    } catch (e) {
+      debugPrint('[HomeController] Error refreshing matches and chats: $e');
+    }
+  }
+
   /// Fetch real matches from the API and populate the matches list.
   Future<void> _loadMatchesFromApi() async {
     try {
       isLoadingMatches.value = true;
-      matches.clear();
       final authRepo = Get.find<AuthRepository>();
       final matchList = await authRepo.getMatches();
       final mapped = matchList.map((up) {
@@ -1341,7 +1362,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
           lifestyle: up.lifestyle,
         );
       }).toList();
-      matches.addAll(mapped);
+      matches.assignAll(mapped);
     } catch (e) {
       debugPrint('[HomeController] Error loading matches from API: $e');
       // No dummy fallback — the UI already shows "No matches yet" when empty

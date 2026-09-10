@@ -377,56 +377,77 @@ class _ProfileCard extends StatelessWidget {
                   // Name and Age
                   Row(
                     children: [
-                      Text(
-                        '${profile.name}, ${profile.age}',
-                        style: AppTextStyles.displayLarge.copyWith(
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                      Flexible(
+                        child: Text(
+                          '${profile.name}, ${profile.age}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.displayLarge.copyWith(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.verified, color: AppColors.gold, size: 22),
+                      if (profile.isVerified) ...[
+                        const SizedBox(width: 8),
+                        const Icon(Icons.verified, color: AppColors.gold, size: 22),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 6),
 
                   // Job details
-                  Row(
-                    children: [
-                      const Icon(Icons.business_center_outlined, color: AppColors.textSecondary, size: 14),
-                      const SizedBox(width: 6),
-                      Text(
-                        profile.job,
-                        style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
+                  if (profile.job.isNotEmpty) ...[
+                    Row(
+                      children: [
+                        const Icon(Icons.business_center_outlined, color: AppColors.textSecondary, size: 14),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            profile.job,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary, fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                  ],
 
                   // Distance
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on_outlined, color: AppColors.textSecondary, size: 14),
-                      const SizedBox(width: 6),
-                      Text(
-                        profile.distance,
-                        style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
+                  if (profile.distance.isNotEmpty) ...[
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on_outlined, color: AppColors.textSecondary, size: 14),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            profile.distance,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary, fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                  ] else ...[
+                    const SizedBox(height: 8),
+                  ],
 
                   // Bio description snippet
-                  Text(
-                    profile.bio,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary.withOpacity(0.85),
-                      fontSize: 12.5,
+                  if (profile.bio.isNotEmpty)
+                    Text(
+                      profile.bio,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textSecondary.withOpacity(0.85),
+                        fontSize: 12.5,
+                      ),
                     ),
-                  ),
 
                 ],
               ),
