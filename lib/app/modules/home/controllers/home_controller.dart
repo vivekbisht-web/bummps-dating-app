@@ -13,6 +13,7 @@ import '../../../core/utils/app_snackbar.dart';
 import '../../../core/services/storage/secure_storage_service.dart';
 import '../../../core/services/socket/socket_service.dart';
 import '../../../data/repositories/auth_repository.dart';
+import '../../../data/repositories/chat_repository.dart';
 import '../../../data/models/user_profile.dart';
 import '../../../data/models/subscription_plan.dart';
 import '../../../data/models/circle_dashboard.dart';
@@ -127,10 +128,26 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
   final RxBool isLoadingMatches = false.obs;
   final List<ProfileCardData> likesYouList = [];
 
-  // Messages list
+  // Messages list & search
   final RxList<ChatThread> chatThreads = <ChatThread>[].obs;
   final RxBool isLoadingChats = false.obs;
   final RxBool isLoadingMessages = false.obs;
+  final RxString chatSearchQuery = ''.obs;
+
+  List<ChatThread> get filteredChatThreads {
+    final query = chatSearchQuery.value.trim().toLowerCase();
+    if (query.isEmpty) {
+      return chatThreads;
+    }
+    return chatThreads.where((c) {
+      return c.name.toLowerCase().contains(query) ||
+          c.lastMessage.value.toLowerCase().contains(query);
+    }).toList();
+  }
+
+  void searchChats(String query) {
+    chatSearchQuery.value = query;
+  }
 
   // Likes search list & loading state
   final RxList<Map<String, dynamic>> likedProfilesList = <Map<String, dynamic>>[].obs;
@@ -241,6 +258,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     _loadInitialProfiles();
     _loadLikesYouList();
     _loadMatchesFromApi();
+    loadInboxFromApi();
     loadWhoLikedMeProfiles();
     fetchCircleDashboard();
     fetchCircleEvents();
@@ -1312,6 +1330,7 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     try {
       await Future.wait([
         _loadMatchesFromApi(),
+        loadInboxFromApi(),
         loadWhoLikedMeProfiles(),
       ]);
       try {
@@ -1329,12 +1348,12 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     }
   }
 
-  /// Fetch real matches from the API and populate the matches list.
+  /// Fetch real matches from the API (GET /api/chats/matches) and populate the matches list.
   Future<void> _loadMatchesFromApi() async {
     try {
       isLoadingMatches.value = true;
-      final authRepo = Get.find<AuthRepository>();
-      final matchList = await authRepo.getMatches();
+      final chatRepo = Get.find<ChatRepository>();
+      final matchList = await chatRepo.getChatMatches();
       final mapped = matchList.map((up) {
         String picUrl = up.profilePic;
         if (picUrl.isEmpty) {
@@ -1365,25 +1384,216 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
       matches.assignAll(mapped);
     } catch (e) {
       debugPrint('[HomeController] Error loading matches from API: $e');
-      // No dummy fallback — the UI already shows "No matches yet" when empty
     } finally {
       isLoadingMatches.value = false;
     }
   }
 
+  /// Fetch active conversations inbox — GET /api/chats/inbox
+  Future<void> loadInboxFromApi() async {
+    try {
+      isLoadingChats.value = true;
+      final chatRepo = Get.find<ChatRepository>();
+      final inboxList = await chatRepo.getInbox();
+      debugPrint('[HomeController] [API] loadInboxFromApi() received ${inboxList.length} items');
+      if (inboxList.isNotEmpty) {
+        _populateChatsFromApi(inboxList);
+      }
+    } catch (e) {
+      debugPrint('[HomeController] Error loading inbox from API: $e');
+    } finally {
+      isLoadingChats.value = false;
+    }
+  }
+
+  void _populateChatsFromApi(List<dynamic> inboxList) {
+    final String? myId = currentUserProfile.value?.id;
+    for (var item in inboxList) {
+      if (item is Map) {
+        final Map<String, dynamic> map = Map<String, dynamic>.from(item);
+        final String chatId = map['_id']?.toString() ?? map['chatId']?.toString() ?? map['id']?.toString() ?? '';
+
+        // Find other participant in conversation
+        Map<String, dynamic> userObj = {};
+        if (map['participant'] is Map) {
+          userObj = Map<String, dynamic>.from(map['participant']);
+        } else if (map['user'] is Map) {
+          userObj = Map<String, dynamic>.from(map['user']);
+        } else if (map['recipient'] is Map) {
+          userObj = Map<String, dynamic>.from(map['recipient']);
+        } else if (map['receiver'] is Map) {
+          userObj = Map<String, dynamic>.from(map['receiver']);
+        } else if (map['participants'] is List) {
+          final participants = map['participants'] as List;
+          final other = participants.firstWhereOrNull((p) {
+            if (p is Map) {
+              final pid = p['_id']?.toString() ?? p['id']?.toString() ?? '';
+              return myId != null && myId.isNotEmpty ? pid != myId : true;
+            }
+            return false;
+          });
+          if (other is Map) {
+            userObj = Map<String, dynamic>.from(other);
+          }
+        } else if (map['users'] is List) {
+          final users = map['users'] as List;
+          final other = users.firstWhereOrNull((p) {
+            if (p is Map) {
+              final pid = p['_id']?.toString() ?? p['id']?.toString() ?? '';
+              return myId != null && myId.isNotEmpty ? pid != myId : true;
+            }
+            return false;
+          });
+          if (other is Map) {
+            userObj = Map<String, dynamic>.from(other);
+          }
+        }
+
+        final String userObjId = userObj['_id']?.toString() ?? userObj['id']?.toString() ?? '';
+        final String name = userObj['name']?.toString() ?? map['name']?.toString() ?? 'Connection';
+        String photo = userObj['profilePic']?.toString() ?? map['imageUrl']?.toString() ?? '';
+        if (photo.isEmpty) {
+          photo = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80';
+        } else if (!photo.startsWith('http') && !photo.startsWith('assets/')) {
+          photo = 'https://datingapp-oz22.onrender.com/$photo';
+        }
+
+        final lastMsgObj = map['lastMessage'];
+        String lastMsgText = '';
+        String msgCreatedAt = '';
+        if (lastMsgObj is Map) {
+          lastMsgText = lastMsgObj['message']?.toString() ?? lastMsgObj['text']?.toString() ?? lastMsgObj['content']?.toString() ?? '';
+          msgCreatedAt = lastMsgObj['createdAt']?.toString() ?? lastMsgObj['time']?.toString() ?? '';
+        } else if (lastMsgObj is String) {
+          lastMsgText = lastMsgObj;
+        } else {
+          lastMsgText = map['lastMessageText']?.toString() ?? '';
+        }
+
+        if (msgCreatedAt.isEmpty) {
+          msgCreatedAt = map['updatedAt']?.toString() ?? map['createdAt']?.toString() ?? '';
+        }
+
+        final String timeStr = _formatTimeString(msgCreatedAt);
+        final bool isOnline = userObj['isOnline'] == true || map['isOnline'] == true;
+        final int unreadCount = map['unreadCount'] is int
+            ? map['unreadCount']
+            : (int.tryParse(map['unreadCount']?.toString() ?? '0') ?? 0);
+        final bool isUnread = unreadCount > 0 || map['isUnread'] == true;
+
+        final targetUserId = userObjId.isNotEmpty
+            ? userObjId
+            : (chatId.isNotEmpty ? chatId : DateTime.now().millisecondsSinceEpoch.toString());
+
+        final existing = chatThreads.firstWhereOrNull(
+          (c) =>
+              (userObjId.isNotEmpty && c.id == userObjId) ||
+              (chatId.isNotEmpty && c.roomId.value == chatId) ||
+              (c.name.startsWith(name)),
+        );
+
+        if (existing != null) {
+          if (chatId.isNotEmpty && existing.roomId.value == null) {
+            existing.roomId.value = chatId;
+          }
+          if (lastMsgText.isNotEmpty) {
+            existing.lastMessage.value = lastMsgText;
+          }
+          if (timeStr.isNotEmpty) {
+            existing.time.value = timeStr;
+          }
+          existing.isOnline.value = isOnline;
+          existing.isUnread.value = isUnread;
+        } else {
+          final newChat = ChatThread(
+            id: targetUserId,
+            initialRoomId: chatId.isNotEmpty ? chatId : null,
+            name: name,
+            imageUrl: photo,
+            initialMessage: lastMsgText.isNotEmpty ? lastMsgText : 'Connected with $name',
+            initialTime: timeStr.isNotEmpty ? timeStr : 'Recent',
+            unread: isUnread,
+            online: isOnline,
+          );
+          chatThreads.add(newChat);
+        }
+      }
+    }
+  }
+
+  /// Fetch chat history with a specific user / conversation — GET /api/chats/history/:id
+  Future<void> loadChatHistory(ChatThread chat) async {
+    try {
+      isLoadingMessages.value = true;
+      final chatRepo = Get.find<ChatRepository>();
+      final String targetId = chat.id.isNotEmpty ? chat.id : (chat.roomId.value ?? '');
+      if (targetId.isEmpty) {
+        isLoadingMessages.value = false;
+        return;
+      }
+      debugPrint('[HomeController] [API] Calling getChatHistory for targetId: "$targetId"');
+      final rawMessages = await chatRepo.getChatHistory(targetId);
+      debugPrint('[HomeController] [API] getChatHistory returned ${rawMessages.length} messages for chat ${chat.name}');
+
+      final String? myId = currentUserProfile.value?.id;
+      final List<Map<String, dynamic>> parsedMessages = [];
+
+      for (var m in rawMessages) {
+        final String text = m['message']?.toString() ?? m['text']?.toString() ?? m['content']?.toString() ?? '';
+        if (text.isEmpty) continue;
+
+        final String senderId = m['senderId']?.toString() ??
+            m['sender']?['_id']?.toString() ??
+            m['sender']?['id']?.toString() ??
+            m['sender']?.toString() ??
+            '';
+        final bool isMe = (myId != null && myId.isNotEmpty && senderId == myId) ||
+            m['sender'] == 'me' ||
+            m['isMine'] == true;
+
+        final String createdAt = m['createdAt']?.toString() ?? m['timestamp']?.toString() ?? m['time']?.toString() ?? '';
+        final String timeStr = _formatMessageTime(createdAt);
+        final String dateStr = _formatMessageDate(createdAt);
+
+        parsedMessages.add({
+          'id': m['_id']?.toString() ?? m['id']?.toString() ?? '',
+          'text': text,
+          'sender': isMe ? 'me' : 'them',
+          'time': timeStr,
+          'date': dateStr,
+        });
+      }
+
+      if (parsedMessages.isNotEmpty) {
+        chat.messages.assignAll(parsedMessages);
+        final last = parsedMessages.last;
+        chat.lastMessage.value = last['text'] ?? '';
+        chat.time.value = last['time'] ?? '';
+      } else if (chat.name.contains('Elena')) {
+        // Keep initial Elena demo conversation if API returned empty
+      } else {
+        chat.messages.clear();
+      }
+    } catch (e) {
+      debugPrint('[HomeController] Error fetching chat history from API: $e. Falling back to socket getMessages.');
+      _loadMessagesFromSocket(chat);
+    } finally {
+      isLoadingMessages.value = false;
+    }
+  }
 
   void _loadMessagesFromSocket(ChatThread chat) {
     try {
       isLoadingMessages.value = true;
       final socketService = Get.find<SocketService>();
       final String fetchId = chat.roomId.value ?? chat.id;
-      
+
       socketService.getMessages(
         chatId: fetchId,
         callback: (msgList) {
           isLoadingMessages.value = false;
           debugPrint('[HomeController] [Socket] getMessages returned ${msgList.length} items for chat ${chat.id} (roomId: ${chat.roomId.value})');
-          
+
           final List<Map<String, dynamic>> parsedMessages = [];
           for (var m in msgList) {
             if (m is Map) {
@@ -1398,12 +1608,75 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
               });
             }
           }
-          chat.messages.assignAll(parsedMessages);
+          if (parsedMessages.isNotEmpty) {
+            chat.messages.assignAll(parsedMessages);
+          }
         },
       );
     } catch (e) {
       isLoadingMessages.value = false;
       debugPrint('[HomeController] Error loading messages from Socket: $e');
+    }
+  }
+
+  String _formatTimeString(String rawDate) {
+    if (rawDate.isEmpty) return 'Recent';
+    try {
+      final dt = DateTime.parse(rawDate).toLocal();
+      final now = DateTime.now();
+      final diff = now.difference(dt);
+      if (diff.inDays == 0 && now.day == dt.day) {
+        final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+        final minute = dt.minute.toString().padLeft(2, '0');
+        final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+        return '$hour:$minute $ampm';
+      } else if (diff.inDays < 2 && now.day - dt.day == 1) {
+        return 'Yesterday';
+      } else if (diff.inDays < 7) {
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        return days[dt.weekday - 1];
+      } else {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return '${months[dt.month - 1]} ${dt.day}';
+      }
+    } catch (_) {
+      return rawDate;
+    }
+  }
+
+  String _formatMessageTime(String rawDate) {
+    if (rawDate.isEmpty) return _formatCurrentTime();
+    try {
+      final dt = DateTime.parse(rawDate).toLocal();
+      final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+      final minute = dt.minute.toString().padLeft(2, '0');
+      final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+      return '$hour:$minute $ampm';
+    } catch (_) {
+      return rawDate.isNotEmpty ? rawDate : _formatCurrentTime();
+    }
+  }
+
+  String _formatMessageDate(String rawDate) {
+    if (rawDate.isEmpty) return 'TODAY';
+    try {
+      final dt = DateTime.parse(rawDate).toLocal();
+      final now = DateTime.now();
+      final diff = now.difference(dt);
+      if (diff.inDays == 0 && now.day == dt.day) {
+        return 'TODAY';
+      } else if (diff.inDays < 2 && now.day - dt.day == 1) {
+        return 'YESTERDAY';
+      } else {
+        const months = [
+          'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
+          'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'
+        ];
+        const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+        return '${days[dt.weekday - 1]}, ${months[dt.month - 1]} ${dt.day}';
+      }
+    } catch (_) {
+      return 'TODAY';
     }
   }
 
@@ -1815,10 +2088,10 @@ class HomeController extends GetxController with GetSingleTickerProviderStateMix
     if (!checkSubscriptionOrShowDialog(featureName: 'Direct Messaging')) {
       return;
     }
-    debugPrint('[HomeController] openChatDetail() called - chatId: "${chat.id}", name: "${chat.name}"');
+    debugPrint('[HomeController] openChatDetail() called - chatId: "${chat.id}", roomId: "${chat.roomId.value}", name: "${chat.name}"');
     
-    // Fetch latest messages via Socket
-    _loadMessagesFromSocket(chat);
+    // Fetch latest chat messages via REST API (GET /api/chats/history/:id)
+    loadChatHistory(chat);
 
     // Fetch user status via Socket.IO
     try {

@@ -333,28 +333,8 @@ class ProfileDetailsView extends StatelessWidget {
                       return;
                     }
                     Get.back();
-                    // Open/simulate messaging with this profile
-                    final chatName = '${profile.name}, ${profile.age}';
-                    
-                    // Create thread if not exist
-                    final exists = controller.chatThreads.any((element) => element.name == chatName);
-                    if (!exists) {
-                      controller.chatThreads.insert(
-                        0,
-                        ChatThread(
-                          id: DateTime.now().millisecondsSinceEpoch.toString(),
-                          name: chatName,
-                          imageUrl: profile.imageUrl,
-                          initialMessage: 'Say hello to ${profile.name}!',
-                          initialTime: 'Just Now',
-                        ),
-                      );
-                    }
-
-                    // Open Messages tab
+                    final chat = controller.getOrCreateChatThread(profile);
                     controller.activeTab.value = 1;
-                    // Auto-open chat details
-                    final chat = controller.chatThreads.firstWhere((element) => element.name == chatName);
                     controller.openChatDetail(chat);
                   },
                   borderRadius: BorderRadius.circular(16),

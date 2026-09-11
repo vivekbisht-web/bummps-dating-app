@@ -2,7 +2,8 @@ class AppConstants {
   AppConstants._();
 
   // static const String baseUrl = 'http://148.66.153.121:5000/api/';   //baseUrl updated
-  static const String baseUrl = 'https://api.bummps.com/api/';   //baseUrl updated
+  static const String baseUrl = 'https://datingapp-oz22.onrender.com/api/';   //redner test basuel  updated
+  // static const String baseUrl = 'https://api.bummps.com/api/';   //baseUrl updated
 
   // Auth Endpoints
   static const String login = 'auth/login';
@@ -15,7 +16,7 @@ class AppConstants {
 
   // Matches Endpoints
   static const String feed = 'matches/feed';
-  static const String matches = 'matches/my-matches';
+  static const String matches = 'chats/matches';
   static const String like = 'matches/like';
   static const String pass = 'matches/pass';
   static const String rewind = 'matches/rewind';
@@ -25,6 +26,11 @@ class AppConstants {
   static const String whoLikedMeFilter = 'matches/who-liked-me/filter';
   static const String superLike = 'swipes/super-like';
   static const String boost = 'matches/boost';
+
+  // Chat Endpoints
+  static const String chatInbox = 'chats/inbox';
+  static const String chatMatches = 'chats/matches';
+  static const String chatHistory = 'chats/history';
 
   // Plans Endpoints
   static const String allPlans = 'plans/allplans';

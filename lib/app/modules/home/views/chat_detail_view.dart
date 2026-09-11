@@ -93,6 +93,50 @@ class ChatDetailView extends GetView<HomeController> {
             // Chat history area
             Expanded(
               child: Obx(() {
+                if (controller.isLoadingMessages.value && chat.messages.isEmpty) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.gold,
+                      strokeWidth: 2,
+                    ),
+                  );
+                }
+
+                if (chat.messages.isEmpty && !chat.isTyping.value) {
+                  final firstName = chat.name.split(',').first.trim();
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircleAvatar(
+                            backgroundImage: NetworkImage(chat.imageUrl),
+                            radius: 36,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'You matched with $firstName!',
+                            style: AppTextStyles.titleMedium.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Send a message below to break the ice.',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.textMuted,
+                              fontSize: 13,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
                 final items = _buildListItems(chat.messages, chat.isTyping.value);
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
