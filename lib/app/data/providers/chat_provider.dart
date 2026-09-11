@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/network/dio_client.dart';
@@ -13,6 +14,9 @@ class ChatProvider {
   Future<List<dynamic>> getInbox() async {
     return await _dioClient.get<List<dynamic>>(
       AppConstants.chatInbox,
+      options: Options(
+        extra: {'suppressGlobalError': true},
+      ),
       fromJson: (json) {
         return _parseListPayload(json);
       },
@@ -23,6 +27,9 @@ class ChatProvider {
   Future<List<UserProfile>> getChatMatches() async {
     return await _dioClient.get<List<UserProfile>>(
       AppConstants.chatMatches,
+      options: Options(
+        extra: {'suppressGlobalError': true},
+      ),
       fromJson: (json) {
         return _parseUserProfileList(json);
       },
@@ -33,6 +40,9 @@ class ChatProvider {
   Future<List<Map<String, dynamic>>> getChatHistory(String targetId) async {
     return await _dioClient.get<List<Map<String, dynamic>>>(
       '${AppConstants.chatHistory}/$targetId',
+      options: Options(
+        extra: {'suppressGlobalError': true},
+      ),
       fromJson: (json) {
         return _parseMessageHistory(json);
       },
