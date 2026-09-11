@@ -57,13 +57,33 @@ class ChatProvider {
     }
 
     if (json is Map) {
-      if (json['data'] is List) return json['data'];
-      if (json['chats'] is List) return json['chats'];
-      if (json['inbox'] is List) return json['inbox'];
-      if (json['conversations'] is List) return json['conversations'];
-      if (json['results'] is List) return json['results'];
-      if (json['matches'] is List) return json['matches'];
-      if (json['chat'] != null) return [json['chat']];
+      // 1. Check direct common list keys
+      for (final key in ['chats', 'inbox', 'conversations', 'results', 'matches', 'messages', 'chatList', 'docs', 'data']) {
+        if (json[key] is List) {
+          return json[key] as List<dynamic>;
+        }
+      }
+      // 2. Check nested data map
+      if (json['data'] is Map) {
+        final nested = json['data'] as Map;
+        for (final key in ['chats', 'inbox', 'conversations', 'results', 'matches', 'messages', 'chatList', 'docs', 'data']) {
+          if (nested[key] is List) {
+            return nested[key] as List<dynamic>;
+          }
+        }
+        for (final val in nested.values) {
+          if (val is List) return val;
+        }
+      }
+      // 3. Fallback: check any list value in top-level map
+      for (final val in json.values) {
+        if (val is List) {
+          return val;
+        }
+      }
+      if (json['chat'] != null && json['chat'] is Map) {
+        return [json['chat']];
+      }
     }
 
     return [];
@@ -84,14 +104,36 @@ class ChatProvider {
     if (json is List) {
       rawList = json;
     } else if (json is Map) {
-      if (json['data'] is List) {
-        rawList = json['data'];
-      } else if (json['matches'] is List) {
-        rawList = json['matches'];
-      } else if (json['users'] is List) {
-        rawList = json['users'];
-      } else if (json['profiles'] is List) {
-        rawList = json['profiles'];
+      for (final key in ['matches', 'users', 'profiles', 'feed', 'results', 'docs', 'data']) {
+        if (json[key] is List) {
+          rawList = json[key] as List<dynamic>;
+          break;
+        }
+      }
+      if (rawList.isEmpty && json['data'] is Map) {
+        final nested = json['data'] as Map;
+        for (final key in ['matches', 'users', 'profiles', 'feed', 'results', 'docs', 'data']) {
+          if (nested[key] is List) {
+            rawList = nested[key] as List<dynamic>;
+            break;
+          }
+        }
+        if (rawList.isEmpty) {
+          for (final val in nested.values) {
+            if (val is List) {
+              rawList = val;
+              break;
+            }
+          }
+        }
+      }
+      if (rawList.isEmpty) {
+        for (final val in json.values) {
+          if (val is List) {
+            rawList = val;
+            break;
+          }
+        }
       }
     }
 
@@ -107,6 +149,12 @@ class ChatProvider {
           }
           if (map['matchedUser'] is Map) {
             return UserProfile.fromJson(Map<String, dynamic>.from(map['matchedUser'] as Map));
+          }
+          if (map['targetUser'] is Map) {
+            return UserProfile.fromJson(Map<String, dynamic>.from(map['targetUser'] as Map));
+          }
+          if (map['otherUser'] is Map) {
+            return UserProfile.fromJson(Map<String, dynamic>.from(map['otherUser'] as Map));
           }
           return UserProfile.fromJson(map);
         })
@@ -128,14 +176,34 @@ class ChatProvider {
     if (json is List) {
       rawList = json;
     } else if (json is Map) {
-      if (json['data'] is List) {
-        rawList = json['data'];
-      } else if (json['messages'] is List) {
-        rawList = json['messages'];
-      } else if (json['history'] is List) {
-        rawList = json['history'];
-      } else if (json['chat'] is Map && json['chat']['messages'] is List) {
-        rawList = json['chat']['messages'];
+      for (final key in ['messages', 'history', 'chats', 'results', 'docs', 'data']) {
+        if (json[key] is List) {
+          rawList = json[key] as List<dynamic>;
+          break;
+        }
+      }
+      if (rawList.isEmpty && json['data'] is Map) {
+        final nested = json['data'] as Map;
+        for (final key in ['messages', 'history', 'chat', 'results', 'docs', 'data']) {
+          if (nested[key] is List) {
+            rawList = nested[key] as List<dynamic>;
+            break;
+          }
+        }
+        if (rawList.isEmpty && nested['chat'] is Map && nested['chat']['messages'] is List) {
+          rawList = nested['chat']['messages'] as List<dynamic>;
+        }
+      }
+      if (rawList.isEmpty && json['chat'] is Map && json['chat']['messages'] is List) {
+        rawList = json['chat']['messages'] as List<dynamic>;
+      }
+      if (rawList.isEmpty) {
+        for (final val in json.values) {
+          if (val is List) {
+            rawList = val;
+            break;
+          }
+        }
       }
     }
 

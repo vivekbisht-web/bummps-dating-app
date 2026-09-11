@@ -14,6 +14,8 @@ class SocketService extends GetxService {
   // Observables for real-time socket events
   final Rxn<Map<String, dynamic>> latestIncomingMessage = Rxn<Map<String, dynamic>>();
   final Rxn<Map<String, dynamic>> latestUserStatus = Rxn<Map<String, dynamic>>();
+  final Rxn<List<dynamic>> latestChatsList = Rxn<List<dynamic>>();
+  final Rxn<List<dynamic>> latestMatchesList = Rxn<List<dynamic>>();
 
   Future<SocketService> init() async {
     await connectSocket();
@@ -27,7 +29,14 @@ class SocketService extends GetxService {
       final userId = await storage.getUserId();
 
       // Extract socket origin URL (e.g., https://datingapp-oz22.onrender.com)
-      final String socketUrl = AppConstants.baseUrl.replaceAll('/api/', '');
+      final String rawBase = AppConstants.baseUrl;
+      String socketUrl = rawBase;
+      try {
+        final uri = Uri.parse(rawBase);
+        socketUrl = '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
+      } catch (_) {
+        socketUrl = rawBase.replaceAll('/api/', '').replaceAll('/api', '');
+      }
 
       PrettyLogger.printBox(
         tag: 'SOCKET',
@@ -42,9 +51,22 @@ class SocketService extends GetxService {
       _socket = io.io(
         socketUrl,
         io.OptionBuilder()
-            .setTransports(['websocket'])
-            .setAuth({'token': token})
+            .setTransports(['websocket', 'polling'])
+            .setAuth({
+              'token': token ?? '',
+              'authorization': token != null && token.isNotEmpty ? 'Bearer $token' : '',
+              'userId': userId ?? '',
+            })
+            .setExtraHeaders({
+              'Authorization': token != null && token.isNotEmpty ? 'Bearer $token' : '',
+              'token': token ?? '',
+            })
+            .setQuery({
+              'token': token ?? '',
+              'userId': userId ?? '',
+            })
             .enableAutoConnect()
+            .enableReconnection()
             .build(),
       );
 
@@ -53,24 +75,10 @@ class SocketService extends GetxService {
       _socket?.onAny((event, data) {
         debugPrint("");
         debugPrint("===========================================");
-        debugPrint("EVENT RECEIVED");
+        debugPrint("[SOCKET EVENT RECEIVED]");
         debugPrint("Event : $event");
         debugPrint("Data  : $data");
         debugPrint("===========================================");
-      });
-
-      _socket?.onError((err) {
-        debugPrint("SOCKET ERROR");
-        debugPrint(err.toString());
-      });
-
-      _socket?.onConnectError((err) {
-        debugPrint("CONNECT ERROR");
-        debugPrint(err.toString());
-      });
-
-      _socket?.onDisconnect((reason) {
-        debugPrint("DISCONNECTED : $reason");
       });
 
       _socket?.onConnect((_) {
@@ -106,101 +114,82 @@ class SocketService extends GetxService {
         isConnected.value = false;
       });
 
-
-
-      _socket?.on('connect_timeout', (data) {
-        PrettyLogger.printBox(
-          tag: 'SOCKET',
-          title: 'Socket Connection ║ Timeout',
-          lines: [
-            'Data: $data',
-          ],
-        );
-      });
-
-      _socket?.onError((data) {
-        PrettyLogger.printBox(
-          tag: 'SOCKET',
-          title: 'Socket Connection ║ Error Event',
-          lines: [
-            'Data: $data',
-          ],
-        );
+      _socket?.onError((err) {
+        debugPrint("[SOCKET ERROR] $err");
       });
 
       _socket?.onReconnect((data) {
-        PrettyLogger.printBox(
-          tag: 'SOCKET',
-          title: 'Socket Connection ║ Reconnected',
-          lines: [
-            'Data: $data',
-          ],
-        );
+        debugPrint("[SOCKET RECONNECTED] $data");
+        isConnected.value = true;
       });
 
-      _socket?.onReconnectAttempt((data) {
-        PrettyLogger.printBox(
-          tag: 'SOCKET',
-          title: 'Socket Connection ║ Reconnect Attempt',
-          lines: [
-            'Attempt Number: $data',
-          ],
-        );
-      });
+      // 4. Listen for Incoming Live Messages (multi-event aliases)
+      final incomingEvents = ['receiveMessage', 'newMessage', 'new_message', 'message', 'chatMessage', 'receive_message'];
+      for (final evt in incomingEvents) {
+        _socket?.on(evt, (data) {
+          PrettyLogger.printJson(
+            tag: 'SOCKET',
+            title: 'Socket Event ║ $evt',
+            data: data,
+          );
+          if (data != null && data is Map) {
+            latestIncomingMessage.value = Map<String, dynamic>.from(data);
+          }
+        });
+      }
 
-      _socket?.on('reconnecting', (data) {
-        PrettyLogger.printBox(
-          tag: 'SOCKET',
-          title: 'Socket Connection ║ Reconnecting',
-          lines: [
-            'Data: $data',
-          ],
-        );
-      });
+      // 7. Listen for Status Changes in Real-Time
+      final statusEvents = ['userStatusChanged', 'userOnline', 'userOffline', 'statusChanged', 'presence'];
+      for (final evt in statusEvents) {
+        _socket?.on(evt, (data) {
+          PrettyLogger.printJson(
+            tag: 'SOCKET',
+            title: 'Socket Event ║ $evt',
+            data: data,
+          );
+          if (data != null && data is Map) {
+            latestUserStatus.value = Map<String, dynamic>.from(data);
+          }
+        });
+      }
 
-      _socket?.onReconnectError((data) {
-        PrettyLogger.printBox(
-          tag: 'SOCKET',
-          title: 'Socket Connection ║ Reconnect Error',
-          lines: [
-            'Error: $data',
-          ],
-        );
-      });
+      // 8. Listen for Live Inbox / Chat updates
+      final inboxEvents = ['chats', 'getChats', 'chatList', 'inbox', 'conversations'];
+      for (final evt in inboxEvents) {
+        _socket?.on(evt, (data) {
+          debugPrint('[Socket] Received event "$evt" with data: $data');
+          List<dynamic> list = [];
+          if (data is List) {
+            list = data;
+          } else if (data is Map && data.containsKey('chats')) {
+            list = data['chats'] ?? [];
+          } else if (data is Map && data.containsKey('data')) {
+            if (data['data'] is List) list = data['data'];
+          }
+          if (list.isNotEmpty) {
+            latestChatsList.value = list;
+          }
+        });
+      }
 
-      _socket?.onReconnectFailed((data) {
-        PrettyLogger.printBox(
-          tag: 'SOCKET',
-          title: 'Socket Connection ║ Reconnect Failed',
-          lines: [
-            'Data: $data',
-          ],
-        );
-      });
-
-      // 4. Listen for Incoming Live Messages ("receiveMessage")
-      _socket?.on('receiveMessage', (data) {
-        PrettyLogger.printJson(
-          tag: 'SOCKET',
-          title: 'Socket Event ║ receiveMessage',
-          data: data,
-        );
-        if (data != null && data is Map) {
-          latestIncomingMessage.value = Map<String, dynamic>.from(data);
-        }
-      });
-
-      // 7. Listen for Status Changes in Real-Time ("userStatusChanged")
-      _socket?.on('userStatusChanged', (data) {
-        PrettyLogger.printJson(
-          tag: 'SOCKET',
-          title: 'Socket Event ║ userStatusChanged',
-          data: data,
-        );
-        if (data != null && data is Map) {
-          latestUserStatus.value = Map<String, dynamic>.from(data);
-        }
-      });
+      // 9. Listen for Live Matches updates
+      final matchEvents = ['matches', 'getNewMatches', 'newMatches', 'match'];
+      for (final evt in matchEvents) {
+        _socket?.on(evt, (data) {
+          debugPrint('[Socket] Received event "$evt" with data: $data');
+          List<dynamic> list = [];
+          if (data is List) {
+            list = data;
+          } else if (data is Map && data.containsKey('matches')) {
+            list = data['matches'] ?? [];
+          } else if (data is Map && data.containsKey('data')) {
+            if (data['data'] is List) list = data['data'];
+          }
+          if (list.isNotEmpty) {
+            latestMatchesList.value = list;
+          }
+        });
+      }
 
     } catch (e) {
       PrettyLogger.printBox(
@@ -217,6 +206,7 @@ class SocketService extends GetxService {
   void sendMessage({
     required String receiverId,
     required String message,
+    String? roomId,
     Function(dynamic response)? onAck,
   }) {
     PrettyLogger.printBox(
@@ -225,6 +215,7 @@ class SocketService extends GetxService {
       lines: [
         'ReceiverId: $receiverId',
         'Message: $message',
+        if (roomId != null) 'RoomId: $roomId',
       ],
     );
 
@@ -238,16 +229,25 @@ class SocketService extends GetxService {
       PrettyLogger.printBox(
         tag: 'SOCKET',
         title: 'Socket Emit Warning ║ sendMessage',
-        lines: ['WARNING: Socket client is not connected. Emitting anyway.'],
+        lines: ['WARNING: Socket client is not connected. Reconnecting & emitting.'],
       );
+      _socket?.connect();
     }
+
+    final Map<String, dynamic> payload = {
+      'receiverId': receiverId,
+      'targetUserId': receiverId,
+      'recipientId': receiverId,
+      'message': message,
+      'text': message,
+      'content': message,
+      if (roomId != null && roomId.isNotEmpty) 'chatId': roomId,
+      if (roomId != null && roomId.isNotEmpty) 'roomId': roomId,
+    };
 
     _socket?.emitWithAck(
       'sendMessage',
-      {
-        'receiverId': receiverId,
-        'message': message,
-      },
+      payload,
       ack: (response) {
         PrettyLogger.printJson(
           tag: 'SOCKET',
@@ -257,7 +257,7 @@ class SocketService extends GetxService {
         if (response != null && response is Map && response['success'] == true) {
           debugPrint("[Socket] Message sent successfully: ${response['data']}");
         } else {
-          debugPrint("[Socket] Send message error: ${response != null && response is Map ? response['error'] : 'Unknown'}");
+          debugPrint("[Socket] Send message response/error: $response");
         }
         if (onAck != null) onAck(response);
       },
@@ -273,23 +273,15 @@ class SocketService extends GetxService {
     );
 
     if (_socket == null) {
-      PrettyLogger.printBox(
-        tag: 'SOCKET',
-        title: 'Socket Emit Error ║ getChats',
-        lines: ['ERROR: Socket client is null.'],
-      );
       callback([]);
       return;
     } else if (!_socket!.connected) {
-      PrettyLogger.printBox(
-        tag: 'SOCKET',
-        title: 'Socket Emit Warning ║ getChats',
-        lines: ['WARNING: Socket client is not connected.'],
-      );
-      callback([]);
-      return;
+      _socket?.connect();
     }
 
+    bool callbackFired = false;
+
+    // Ack handler
     _socket?.emitWithAck(
       'getChats',
       null,
@@ -300,14 +292,35 @@ class SocketService extends GetxService {
           data: response,
         );
         List<dynamic> chatsList = [];
-        if (response is Map && response.containsKey('chats')) {
-          chatsList = response['chats'] ?? [];
+        if (response is Map && response.containsKey('chats') && response['chats'] is List) {
+          chatsList = response['chats'];
+        } else if (response is Map && response.containsKey('data') && response['data'] is List) {
+          chatsList = response['data'];
         } else if (response is List) {
           chatsList = response;
         }
-        callback(chatsList);
+        if (!callbackFired) {
+          callbackFired = true;
+          callback(chatsList);
+        }
       },
     );
+
+    // Fallback: If server replies via event instead of ack
+    _socket?.once('chats', (response) {
+      if (!callbackFired) {
+        callbackFired = true;
+        List<dynamic> chatsList = [];
+        if (response is List) {
+          chatsList = response;
+        } else if (response is Map && response.containsKey('chats')) {
+          chatsList = response['chats'] ?? [];
+        } else if (response is Map && response.containsKey('data') && response['data'] is List) {
+          chatsList = response['data'];
+        }
+        callback(chatsList);
+      }
+    });
   }
 
   // 3. Get Messages for a Chat Room ("getMessages")
@@ -322,30 +335,26 @@ class SocketService extends GetxService {
     );
 
     if (_socket == null) {
-      PrettyLogger.printBox(
-        tag: 'SOCKET',
-        title: 'Socket Emit Error ║ getMessages',
-        lines: ['ERROR: Socket client is null.'],
-      );
       callback([]);
       return;
     } else if (!_socket!.connected) {
-      PrettyLogger.printBox(
-        tag: 'SOCKET',
-        title: 'Socket Emit Warning ║ getMessages',
-        lines: ['WARNING: Socket client is not connected.'],
-      );
       _socket?.connect();
     }
 
-    // Chat room join करें
+    // Join room
     _socket?.emit('joinChat', chatId);
+    _socket?.emit('join', chatId);
 
-    // Messages fetch करने के लिए socket emit करें (Callback/Ack के साथ)
+    bool callbackFired = false;
+
+    // Messages fetch via emitWithAck
     _socket?.emitWithAck(
       'getMessages',
       {
         'chatId': chatId,
+        'roomId': chatId,
+        'targetUserId': chatId,
+        'receiverId': chatId,
       },
       ack: (response) {
         PrettyLogger.printJson(
@@ -353,16 +362,38 @@ class SocketService extends GetxService {
           title: 'Socket Ack ║ getMessages response for chatId "$chatId"',
           data: response,
         );
-        if (response != null && response is Map && response['success'] == true) {
-          final List<dynamic> msgList = response['messages'] ?? [];
-          debugPrint("[Socket] Fetched Messages: $msgList");
+        List<dynamic> msgList = [];
+        if (response is Map) {
+          if (response['messages'] is List) {
+            msgList = response['messages'];
+          } else if (response['data'] is List) {
+            msgList = response['data'];
+          } else if (response['history'] is List) {
+            msgList = response['history'];
+          }
+        } else if (response is List) {
+          msgList = response;
+        }
+        if (!callbackFired) {
+          callbackFired = true;
           callback(msgList);
-        } else {
-          debugPrint("[Socket] Error fetching messages: ${response != null && response is Map ? response['error'] : 'Unknown'}");
-          callback([]);
         }
       },
     );
+
+    // Fallback event listener
+    _socket?.once('messages', (response) {
+      if (!callbackFired) {
+        callbackFired = true;
+        List<dynamic> msgList = [];
+        if (response is List) {
+          msgList = response;
+        } else if (response is Map && response['messages'] is List) {
+          msgList = response['messages'];
+        }
+        callback(msgList);
+      }
+    });
   }
 
   // 5. Get New Matches to start chat ("getNewMatches")
@@ -374,22 +405,13 @@ class SocketService extends GetxService {
     );
 
     if (_socket == null) {
-      PrettyLogger.printBox(
-        tag: 'SOCKET',
-        title: 'Socket Emit Error ║ getNewMatches',
-        lines: ['ERROR: Socket client is null.'],
-      );
       callback([]);
       return;
     } else if (!_socket!.connected) {
-      PrettyLogger.printBox(
-        tag: 'SOCKET',
-        title: 'Socket Emit Warning ║ getNewMatches',
-        lines: ['WARNING: Socket client is not connected.'],
-      );
-      callback([]);
-      return;
+      _socket?.connect();
     }
+
+    bool callbackFired = false;
 
     _socket?.emitWithAck(
       'getNewMatches',
@@ -401,14 +423,32 @@ class SocketService extends GetxService {
           data: response,
         );
         List<dynamic> matchesList = [];
-        if (response is Map && response.containsKey('matches')) {
-          matchesList = response['matches'] ?? [];
+        if (response is Map && response.containsKey('matches') && response['matches'] is List) {
+          matchesList = response['matches'];
+        } else if (response is Map && response.containsKey('data') && response['data'] is List) {
+          matchesList = response['data'];
         } else if (response is List) {
           matchesList = response;
         }
-        callback(matchesList);
+        if (!callbackFired) {
+          callbackFired = true;
+          callback(matchesList);
+        }
       },
     );
+
+    _socket?.once('matches', (response) {
+      if (!callbackFired) {
+        callbackFired = true;
+        List<dynamic> matchesList = [];
+        if (response is List) {
+          matchesList = response;
+        } else if (response is Map && response.containsKey('matches')) {
+          matchesList = response['matches'] ?? [];
+        }
+        callback(matchesList);
+      }
+    });
   }
 
   // 6. Check Status of a User ("getUserStatus")
@@ -423,26 +463,18 @@ class SocketService extends GetxService {
     );
 
     if (_socket == null) {
-      PrettyLogger.printBox(
-        tag: 'SOCKET',
-        title: 'Socket Emit Error ║ getUserStatus',
-        lines: ['ERROR: Socket client is null.'],
-      );
       callback(false, null);
       return;
     } else if (!_socket!.connected) {
-      PrettyLogger.printBox(
-        tag: 'SOCKET',
-        title: 'Socket Emit Warning ║ getUserStatus',
-        lines: ['WARNING: Socket client is not connected.'],
-      );
-      callback(false, null);
-      return;
+      _socket?.connect();
     }
 
     _socket?.emitWithAck(
       'getUserStatus',
-      {'targetUserId': targetUserId},
+      {
+        'targetUserId': targetUserId,
+        'userId': targetUserId,
+      },
       ack: (res) {
         PrettyLogger.printJson(
           tag: 'SOCKET',
@@ -452,7 +484,7 @@ class SocketService extends GetxService {
         bool isOnline = false;
         String? lastSeen;
         if (res is Map) {
-          isOnline = res['isOnline'] == true;
+          isOnline = res['isOnline'] == true || res['online'] == true;
           lastSeen = res['lastSeen']?.toString();
         }
         callback(isOnline, lastSeen);
@@ -470,11 +502,6 @@ class SocketService extends GetxService {
     _socket?.dispose();
     _socket = null;
     isConnected.value = false;
-    PrettyLogger.printBox(
-      tag: 'SOCKET',
-      title: 'Socket Connection ║ Disconnected Successfully',
-      lines: ['All socket references destroyed.'],
-    );
   }
 
   @override
