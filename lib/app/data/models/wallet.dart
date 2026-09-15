@@ -5,7 +5,7 @@ class WalletBalance {
 
   WalletBalance({
     required this.balance,
-    this.currency = 'INR',
+    this.currency = 'USD',
   });
 
   factory WalletBalance.fromJson(Map<String, dynamic> json) {
@@ -24,7 +24,7 @@ class WalletBalance {
 
     return WalletBalance(
       balance: balanceNum.toDouble(),
-      currency: walletData['currency'] as String? ?? 'INR',
+      currency: walletData['currency'] as String? ?? 'USD',
     );
   }
 }

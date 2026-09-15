@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/bummps_logo.dart';
 import '../../../routes/app_pages.dart';
 import '../../home/controllers/home_controller.dart';
 import '../../../data/models/subscription_plan.dart';
@@ -25,10 +26,8 @@ class _PlanColors {
   static const Color onGold = Color(0xFF14110C);
 
   // Typography & Text
-  static const Color textPrimary = Color(0xFFFFFFFF);
   static const Color textHighlight = Color(0xFFDDD5C8);
   static const Color textMuted = Color(0xFF8A7F71);
-  static const Color textDark = Color(0xFF5E5448);
   static const Color textLegal = Color(0xFF6B6256);
 
   // Checkmark circles & icons
@@ -45,8 +44,6 @@ class _PlanColors {
   static const Color sheetBg = Color(0xFF12100E);
   static const Color sheetOptionBg = Color(0xFF181512);
   static const Color divider = Color(0xFF262017);
-  static const Color badgeDarkBg = Color(0xFF2A2012);
-  static const Color badgeGoldBg = Color(0xFF1A140A);
 }
 
 class PlansView extends StatefulWidget {
@@ -92,11 +89,7 @@ class _PlansViewState extends State<PlansView> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _PlanColors.gold, size: 20),
           onPressed: () => Get.back(),
         ),
-        title: Image.asset(
-          'assets/images/bummps-icon.png',
-          height: 34,
-          fit: BoxFit.contain,
-        ),
+        title: const BummpsLogo(compact: true),
         centerTitle: true,
         automaticallyImplyLeading: false,
         actions: [
@@ -205,6 +198,7 @@ class _PlansViewState extends State<PlansView> {
                                 });
                               },
                               child: Container(
+                                height: double.infinity,
                                 decoration: BoxDecoration(
                                   color: isMonthly ? _PlanColors.gold : Colors.transparent,
                                   borderRadius: BorderRadius.circular(22),
@@ -232,41 +226,49 @@ class _PlansViewState extends State<PlansView> {
                                 });
                               },
                               child: Container(
+                                height: double.infinity,
                                 decoration: BoxDecoration(
                                   color: !isMonthly ? _PlanColors.gold : Colors.transparent,
                                   borderRadius: BorderRadius.circular(22),
                                 ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      'ANNUAL',
-                                      style: TextStyle(
-                                        color: !isMonthly ? _PlanColors.onGold : _PlanColors.textMuted,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: isMonthly ? _PlanColors.badgeDarkBg : _PlanColors.badgeGoldBg,
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(color: _PlanColors.gold, width: 0.5),
-                                      ),
-                                      child: const Text(
-                                        'SAVE 40%',
+                                child: Center(
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        'ANNUAL',
                                         style: TextStyle(
-                                          color: _PlanColors.gold,
-                                          fontSize: 8,
+                                          color: !isMonthly ? _PlanColors.onGold : _PlanColors.textMuted,
                                           fontWeight: FontWeight.bold,
-                                          height: 1.0,
+                                          fontSize: 12,
+                                          letterSpacing: 0.5,
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: !isMonthly ? _PlanColors.onGold : const Color(0xFF2A2012),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: !isMonthly ? Colors.transparent : _PlanColors.gold.withOpacity(0.5),
+                                            width: 0.8,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'SAVE 40%',
+                                          style: TextStyle(
+                                            color: _PlanColors.gold,
+                                            fontSize: 8,
+                                            fontWeight: FontWeight.w800,
+                                            height: 1.0,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -632,9 +634,9 @@ class _PlansViewState extends State<PlansView> {
                               ),
                             ),
                             const SizedBox(width: 3),
-                            Text(
-                              isMonthly ? '/month' : '/mo',
-                              style: const TextStyle(
+                            const Text(
+                              '/month',
+                              style: TextStyle(
                                 color: _PlanColors.textMuted,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w400,
@@ -835,7 +837,7 @@ class _PlansViewState extends State<PlansView> {
     final controller = Get.find<HomeController>();
     return Obx(() {
       return Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [Color(0xFF1A1713), Color(0xFF241F18)],
@@ -857,11 +859,12 @@ class _PlansViewState extends State<PlansView> {
               ),
               child: const Icon(Icons.account_balance_wallet, color: _PlanColors.gold, size: 24),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 14),
             // Balance info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     'WALLET BALANCE',
@@ -879,17 +882,23 @@ class _PlansViewState extends State<PlansView> {
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2, color: _PlanColors.gold),
                         )
-                      : Text(
-                          '\$${controller.walletBalance.value.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
+                      : FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            '\$${controller.walletBalance.value.toStringAsFixed(2)}',
+                            maxLines: 1,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                 ],
               ),
             ),
+            const SizedBox(width: 8),
             // Add Money button
             Obx(() {
               final isAdding = controller.isAddingMoney.value;
@@ -1011,7 +1020,7 @@ class _PlansViewState extends State<PlansView> {
                           border: Border.all(color: _PlanColors.gold.withOpacity(0.4)),
                         ),
                         child: Text(
-                          '₹$amt',
+                          '\$$amt',
                           style: const TextStyle(
                             color: _PlanColors.gold,
                             fontWeight: FontWeight.bold,
@@ -1030,7 +1039,7 @@ class _PlansViewState extends State<PlansView> {
                   keyboardType: TextInputType.number,
                   style: const TextStyle(color: Colors.white, fontSize: 18),
                   decoration: InputDecoration(
-                    prefixText: '₹ ',
+                    prefixText: '\$ ',
                     prefixStyle: const TextStyle(color: _PlanColors.gold, fontSize: 18, fontWeight: FontWeight.bold),
                     hintText: 'Enter amount',
                     hintStyle: TextStyle(color: _PlanColors.textMuted.withOpacity(0.5)),
@@ -1155,7 +1164,7 @@ class _PlansViewState extends State<PlansView> {
                 return _buildPaymentOption(
                   icon: Icons.account_balance_wallet,
                   title: 'Pay with Wallet',
-                  subtitle: 'Balance: ₹${balance.toStringAsFixed(2)}${hasEnough ? '' : ' (Insufficient)'}',
+                  subtitle: 'Balance: \$${balance.toStringAsFixed(2)}${hasEnough ? '' : ' (Insufficient)'}',
                   enabled: hasEnough,
                   onTap: () {
                     Navigator.of(ctx).pop();

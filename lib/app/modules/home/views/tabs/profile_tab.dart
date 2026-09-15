@@ -178,7 +178,7 @@ class ProfileTab extends GetView<HomeController> {
                     _buildSettingsRow(
                       icon: Icons.person_outline,
                       title: 'Account',
-                      onTap: () {},
+                      onTap: () => Get.toNamed(Routes.editProfile),
                       showDivider: true,
                     ),
                     _buildSettingsRow(
