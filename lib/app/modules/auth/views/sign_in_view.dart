@@ -396,7 +396,7 @@ class _SocialButton extends StatelessWidget {
 
   final String id;
   final VoidCallback onTap;
-  final IconData icon;
+  final dynamic icon; // accepts both IconData and FaIconData
   final Color backgroundColor;
   final Color iconColor;
   final bool hasBorder;
@@ -404,6 +404,10 @@ class _SocialButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Widget iconWidget = (icon is FaIconData)
+        ? FaIcon(icon as FaIconData, color: iconColor, size: iconSize)
+        : Icon(icon as IconData, color: iconColor, size: iconSize);
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -416,11 +420,7 @@ class _SocialButton extends StatelessWidget {
           color: backgroundColor,
         ),
         alignment: Alignment.center,
-        child: Icon(
-          icon,
-          color: iconColor,
-          size: iconSize,
-        ),
+        child: iconWidget,
       ),
     );
   }
