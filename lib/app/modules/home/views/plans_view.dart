@@ -880,7 +880,7 @@ class _PlansViewState extends State<PlansView> {
                           child: CircularProgressIndicator(strokeWidth: 2, color: _PlanColors.gold),
                         )
                       : Text(
-                          '₹${controller.walletBalance.value.toStringAsFixed(2)}',
+                          '\$${controller.walletBalance.value.toStringAsFixed(2)}',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 24,
