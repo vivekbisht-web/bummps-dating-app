@@ -2,8 +2,8 @@ class AppConstants {
   AppConstants._();
 
   // static const String baseUrl = 'http://148.66.153.121:5000/api/';   //baseUrl updated
-  static const String baseUrl = 'https://datingapp-oz22.onrender.com/api/';   //redner test basuel  updated
-  // static const String baseUrl = 'https://api.bummps.com/api/';   //baseUrl updated
+  // static const String baseUrl = 'https://datingapp-oz22.onrender.com/api/';   //redner test basuel  updated
+  static const String baseUrl = 'https://api.bummps.com/api/';   //Live baseurl
 
   // Auth Endpoints
   static const String login = 'auth/login';
