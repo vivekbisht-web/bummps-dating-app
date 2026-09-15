@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/location_autocomplete_field.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/underline_field.dart';
 import '../../controllers/profile_setup_controller.dart';
@@ -45,30 +47,20 @@ class BasicInfoStep extends StatelessWidget {
                 size: 18, color: AppColors.textMuted),
           ),
           const SizedBox(height: 24),
-          UnderlineField(
-            label: 'Current Location',
-            hint: 'Enter Location',
-            controller: controller.locationController,
-            textInputAction: TextInputAction.done,
-          ),
-          const SizedBox(height: 16),
-          GestureDetector(
-            onTap: controller.useCurrentLocation,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.my_location, size: 16, color: AppColors.gold),
-                const SizedBox(width: 8),
-                Text(
-                  'USE CURRENT LOCATION',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.gold,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
+          GetBuilder<ProfileSetupController>(
+            builder: (_) {
+              return Obx(() {
+                return LocationAutocompleteField(
+                  label: 'Current Location',
+                  hint: 'Search city or address',
+                  controller: controller.locationController,
+                  isDetecting: controller.isDetectingLocation.value,
+                  onDetectLocation: controller.useCurrentLocation,
+                  onLocationSelected: controller.onLocationSelected,
+                  textInputAction: TextInputAction.done,
+                );
+              });
+            },
           ),
           const SizedBox(height: 40),
           PrimaryButton(

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/location_autocomplete_field.dart';
 import '../../../core/widgets/underline_field.dart';
 import '../controllers/edit_profile_controller.dart';
 
@@ -76,31 +77,17 @@ class EditProfileView extends GetView<EditProfileController> {
               ),
               const SizedBox(height: 20),
 
-              UnderlineField(
-                label: 'Living In',
-                hint: 'Enter your city',
-                controller: controller.locationController,
-              ),
-              const SizedBox(height: 10),
-
-              GestureDetector(
-                onTap: controller.useCurrentLocation,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.my_location, size: 14, color: AppColors.gold),
-                    const SizedBox(width: 6),
-                    Text(
-                      'DETECT LOCATION',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.gold,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              Obx(() {
+                return LocationAutocompleteField(
+                  label: 'Living In',
+                  hint: 'Search your city or address',
+                  controller: controller.locationController,
+                  isDetecting: controller.isDetectingLocation.value,
+                  onDetectLocation: controller.useCurrentLocation,
+                  onLocationSelected: controller.onLocationSelected,
+                  detectButtonText: 'DETECT LOCATION',
+                );
+              }),
               const SizedBox(height: 20),
 
               UnderlineField(

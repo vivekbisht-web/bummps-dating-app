@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/services/location_service.dart';
 import '../../../core/services/network/dio_exception.dart';
 import '../../../core/utils/app_snackbar.dart';
 import '../../../data/repositories/auth_repository.dart';
@@ -230,14 +231,36 @@ class EditProfileController extends GetxController {
     }
   }
 
-  void useCurrentLocation() {
-    latitude.value = 28.6139 + (DateTime.now().millisecond % 100) * 0.0001;
-    longitude.value = 77.2090 + (DateTime.now().millisecond % 100) * 0.0001;
-    locationController.text = 'New Delhi, India';
-    AppSnackbar.showInfo(
-      title: 'Location Detected',
-      message: 'Coordinates: ${latitude.value.toStringAsFixed(4)}, ${longitude.value.toStringAsFixed(4)}',
-    );
+  final RxBool isDetectingLocation = false.obs;
+
+  Future<void> useCurrentLocation() async {
+    try {
+      isDetectingLocation.value = true;
+      final result = await LocationService.instance.getCurrentLocation();
+      latitude.value = result.latitude;
+      longitude.value = result.longitude;
+      locationController.text = result.formattedAddress;
+      AppSnackbar.showInfo(
+        title: 'Location Detected',
+        message: result.formattedAddress,
+      );
+    } catch (e) {
+      debugPrint('[EditProfileController] Error getting GPS location: $e');
+      AppSnackbar.showError(
+        title: 'Location Error',
+        message: e.toString().replaceAll('Exception: ', ''),
+      );
+    } finally {
+      isDetectingLocation.value = false;
+    }
+  }
+
+  void onLocationSelected(LocationSuggestion suggestion) {
+    locationController.text = suggestion.displayName;
+    if (suggestion.latitude != null && suggestion.longitude != null) {
+      latitude.value = suggestion.latitude!;
+      longitude.value = suggestion.longitude!;
+    }
   }
 
   void addPhoto(int index) async {

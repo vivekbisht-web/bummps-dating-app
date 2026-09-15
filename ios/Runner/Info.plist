@@ -47,6 +47,10 @@
 	<string>This app requires access to your photo library to select and upload profile pictures.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>This app requires access to save photos to your photo library.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app requires access to your location to automatically detect your current city and show relevant nearby matches.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app requires access to your location to show relevant nearby matches.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
