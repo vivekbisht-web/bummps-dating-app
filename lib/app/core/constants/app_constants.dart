@@ -51,6 +51,7 @@ class AppConstants {
   static const String circleConnect = 'circle/connect';
 
   // Stripe Configuration
-  static const String stripePublishableKey = 'pk_live_51RkbSqQK1GBlP0oYYaQgzsyuZF8A1uMZSEh5RROWtxXV6dnzJT3q82ELPllZJPSPzAdwozXsnnYcrRY5Ivz8kkHN00DjsQgv7k';
+ //replace live key for production // static const String stripePublishableKey = 'pk_live_51RkbSqQK1GBlP0oYYaQgzsyuZF8A1uMZSEh5RROWtxXV6dnzJT3q82ELPllZJPSPzAdwozXsnnYcrRY5Ivz8kkHN00DjsQgv7k';
+  static const String stripePublishableKey = 'pk_test_51RkbSqQK1GBlP0oY8AONEpQfgUx3ApjUicD7D26ivLorYCRSUHcPVN3UTMpxAnjzSJ2bP9QyPsUkDKPVX4FrhvfV00nRPFabaq';
   static const String stripeMerchantDisplayName = 'Bummps';
 }
